@@ -1,17 +1,17 @@
-const mangoose = require("mongoose");
+import mongoose from "mongoose";
 
-const patientSchema =new mangoose.Schema(
+const patientSchema = new mongoose.Schema(
     {
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
     gender: {type: String, required: true},
     birthDate: {type: String},
-    phone: {type: Sting},
+    phone: {type: String},
     email: {type: String},
-    adress: {type: String},
+    address: {type: String},
     },
 
     {timestamps: true}
 );
 
-module.exports = mangoose.model("Patient", patientSchema);
+export default mongoose.model("Patient", patientSchema);

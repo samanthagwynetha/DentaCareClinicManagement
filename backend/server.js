@@ -1,18 +1,22 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-// import connectDB from "./src/config/db.js"; // Commented out for now
+import patientRoutes from "./src/routes/patientRoutes.js";
+import connectDB from "./src/config/db.js";
 
 dotenv.config();
 
 const app = express();
 
-// connectDB(); // Commented out - will enable when MongoDB is ready
+connectDB();
 
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Patient Routes
+app.use("/api/patients", patientRoutes);
 
 // Test route
 app.get("/", (req, res) => {
