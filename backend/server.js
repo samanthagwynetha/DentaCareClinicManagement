@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import patientRoutes from "./src/routes/patientRoutes.js";
+import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import connectDB from "./src/config/db.js";
 
 dotenv.config();
@@ -17,6 +18,9 @@ app.use(express.json());
 
 // Patient Routes
 app.use("/api/patients", patientRoutes);
+
+// Appointment Routes
+app.use("/api/appointments", appointmentRoutes);
 
 // Test route
 app.get("/", (req, res) => {
