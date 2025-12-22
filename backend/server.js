@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import patientRoutes from "./src/routes/patientRoutes.js";
 import appointmentRoutes from "./src/routes/appointmentRoutes.js";
+import invoiceRoutes from "./src/routes/invoiceRoutes.js";
 import connectDB from "./src/config/db.js";
 
 dotenv.config();
@@ -21,6 +22,9 @@ app.use("/api/patients", patientRoutes);
 
 // Appointment Routes
 app.use("/api/appointments", appointmentRoutes);
+
+// Invoice Routes
+app.use("/api/invoices", invoiceRoutes);
 
 // Test route
 app.get("/", (req, res) => {
