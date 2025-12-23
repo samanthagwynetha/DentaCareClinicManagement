@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import patientRoutes from "./src/routes/patientRoutes.js";
 import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import invoiceRoutes from "./src/routes/invoiceRoutes.js";
+import userRoutes from "./routes/userRoutes.js"
 import connectDB from "./src/config/db.js";
 
 dotenv.config();
@@ -25,6 +26,9 @@ app.use("/api/appointments", appointmentRoutes);
 
 // Invoice Routes
 app.use("/api/invoices", invoiceRoutes);
+
+// User Routes
+app.use("/api/users", userRoutes);
 
 // Test route
 app.get("/", (req, res) => {
