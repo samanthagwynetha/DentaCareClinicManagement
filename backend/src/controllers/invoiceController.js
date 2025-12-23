@@ -52,7 +52,7 @@ export const updateInvoice = async (req, res) => {
     }
 };
 
-//delete
+// delete
 export const deleteInvoice = async (req, res) => {
     try {
         await Invoice.findByIdAndDelete(req.params.id);
