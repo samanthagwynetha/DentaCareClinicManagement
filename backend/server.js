@@ -6,6 +6,7 @@ import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import invoiceRoutes from "./src/routes/invoiceRoutes.js";
 import userRoutes from "./routes/userRoutes.js"
 import connectDB from "./src/config/db.js";
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ app.use("/api/invoices", invoiceRoutes);
 
 // User Routes
 app.use("/api/users", userRoutes);
+
+//Auth Routes
+app.use("/api/auth", authRoutes);
 
 // Test route
 app.get("/", (req, res) => {
