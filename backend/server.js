@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import patientRoutes from "./src/routes/patientRoutes.js";
 import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import invoiceRoutes from "./src/routes/invoiceRoutes.js";
-import userRoutes from "./routes/userRoutes.js"
+import userRoutes from "./routes/userRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 
@@ -30,6 +31,9 @@ app.use("/api/invoices", invoiceRoutes);
 
 // User Routes
 app.use("/api/users", userRoutes);
+
+// Admin Routes
+app.use("/api", adminRoutes);
 
 //Auth Routes
 app.use("/api/auth", authRoutes);
