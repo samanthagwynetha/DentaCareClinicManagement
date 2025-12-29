@@ -2,8 +2,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import { useRoleGuard } from "@/utils/roleGuard";
 
 export default function Dashboard() {
+  useRoleGuard(["admin", "dentist", "receptionist"]); // All roles can access dashboard
+  
   const [user, setUser] = useState<{ role?: string }>({});
   const router = useRouter();
 
