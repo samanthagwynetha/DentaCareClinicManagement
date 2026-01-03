@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import StatCard from "@/components/StatCard";
 import TodayAppointments from "@/components/TodayAppointments";
 import QuickActions from "@/components/QuickActions";
@@ -6,9 +7,33 @@ import RecentPatients from "@/components/RecentPatients";
 import RevenueChart from "@/components/RevenueChart";
 import Sidebar from "@/components/Sidebar";
 import { useRoleGuard } from "@/utils/roleGuard";
+import { apiFetch } from "@/lib/api";
+
+type Stats = {
+  totalPatients: number;
+  todayAppointments: number;
+  monthlyRevenue: number;
+};
 
 export default function DashboardPage() {
   useRoleGuard(["admin", "dentist", "receptionist"]);
+  
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data = await apiFetch<Stats>("/api/dashboard/stats");
+        setStats(data);
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -72,7 +97,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               title="Total Patients"
-              value="2,847"
+              value={loading ? "..." : stats?.totalPatients || 0}
               change="12.5% from last month"
               changeType="increase"
               iconBg="bg-blue-50"
@@ -84,7 +109,7 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Today's Appointments"
-              value="24"
+              value={loading ? "..." : stats?.todayAppointments || 0}
               change="5 remaining"
               changeType="increase"
               iconBg="bg-green-50"
@@ -96,7 +121,7 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Monthly Revenue"
-              value="₱62,400"
+              value={loading ? "..." : `₱${stats?.monthlyRevenue?.toLocaleString() || "0.00"}`}
               change="18.2% from last month"
               changeType="increase"
               iconBg="bg-yellow-50"
