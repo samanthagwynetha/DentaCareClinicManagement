@@ -6,6 +6,7 @@ import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import invoiceRoutes from "./src/routes/invoiceRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 
@@ -37,6 +38,9 @@ app.use("/api", adminRoutes);
 
 //Auth Routes
 app.use("/api/auth", authRoutes);
+
+//Dashboard Routes
+app.use("/api/dashboard", dashboardRoutes);
 
 // Test route
 app.get("/", (req, res) => {
