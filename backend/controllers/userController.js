@@ -1,5 +1,15 @@
 import User from '../models/User.js';
 
+// Get all dentists (accessible to all authenticated users)
+export const getDentists = async (req, res) => {
+    try {
+        const dentists = await User.find({ role: 'dentist' }).select('_id name');
+        res.json(dentists);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // create user
 export const createUser = async (req, res) => {
     try {
