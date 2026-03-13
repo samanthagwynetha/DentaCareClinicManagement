@@ -1,3 +1,6 @@
+"use client";
+import { useRouter } from "next/navigation";
+
 type Action = {
   id: string;
   label: string;
@@ -8,6 +11,8 @@ type Action = {
 };
 
 export default function QuickActions() {
+  const router = useRouter();
+
   const actions: Action[] = [
     {
       id: "1",
@@ -19,6 +24,7 @@ export default function QuickActions() {
       ),
       bgColor: "bg-teal-50",
       textColor: "text-teal-600",
+      onClick: () => router.push("/patients"),
     },
     {
       id: "2",
@@ -30,6 +36,7 @@ export default function QuickActions() {
       ),
       bgColor: "bg-teal-50",
       textColor: "text-teal-600",
+      onClick: () => router.push("/appointments"),
     },
     {
       id: "3",
@@ -41,6 +48,7 @@ export default function QuickActions() {
       ),
       bgColor: "bg-orange-50",
       textColor: "text-orange-600",
+      onClick: () => router.push("/billing"),
     },
     {
       id: "4",
@@ -52,6 +60,7 @@ export default function QuickActions() {
       ),
       bgColor: "bg-teal-50",
       textColor: "text-teal-600",
+      onClick: () => router.push("/appointments"),
     },
   ];
 

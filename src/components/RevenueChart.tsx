@@ -1,12 +1,66 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
+
+type RevenueMonthlyResponse = {
+  year: number;
+  months: string[];
+  revenueData: number[];
+};
 
 export default function RevenueChart() {
-  // Mock data for the chart
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const revenueData = [30, 35, 35, 38, 40, 42, 45, 48, 52, 56, 60, 65];
-  const maxRevenue = Math.max(...revenueData);
+  const [months, setMonths] = useState<string[]>([
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]);
+  const [revenueData, setRevenueData] = useState<number[]>(Array(12).fill(0));
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [loading, setLoading] = useState(true);
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; month: string; revenue: number } | null>(null);
+
+  useEffect(() => {
+    async function loadRevenue() {
+      try {
+        const data = await apiFetch<RevenueMonthlyResponse>("/api/dashboard/revenue-monthly");
+        if (Array.isArray(data.months) && data.months.length === 12) {
+          setMonths(data.months);
+        }
+        if (Array.isArray(data.revenueData) && data.revenueData.length === 12) {
+          setRevenueData(data.revenueData);
+        }
+        if (data.year) {
+          setYear(data.year);
+        }
+      } catch (err) {
+        console.error("Failed to load monthly revenue:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRevenue();
+  }, []);
+
+  const maxRevenue = Math.max(...revenueData, 1);
+  const totalRevenue = useMemo(
+    () => revenueData.reduce((sum, value) => sum + value, 0),
+    [revenueData]
+  );
+  const avgMonthly = totalRevenue / 12;
+
+  function formatPeso(value: number) {
+    return `₱${value.toLocaleString()}`;
+  }
   
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -15,7 +69,9 @@ export default function RevenueChart() {
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
             Revenue Overview
           </h2>
-          <p className="text-sm text-gray-500">Monthly revenue for 2025</p>
+          <p className="text-sm text-gray-500">
+            {loading ? "Loading revenue..." : `Monthly revenue for ${year}`}
+          </p>
         </div>
         <div className="flex gap-2">
           <button className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200">
@@ -37,11 +93,11 @@ export default function RevenueChart() {
       <div className="relative h-64 mb-6 flex gap-4">
         {/* Y-axis labels */}
         <div className="flex flex-col justify-between text-xs text-gray-400 py-2">
-          <span>₱80k</span>
-          <span>₱60k</span>
-          <span>₱40k</span>
-          <span>₱20k</span>
-          <span>₱0k</span>
+          <span>{formatPeso(maxRevenue)}</span>
+          <span>{formatPeso(Math.round(maxRevenue * 0.75))}</span>
+          <span>{formatPeso(Math.round(maxRevenue * 0.5))}</span>
+          <span>{formatPeso(Math.round(maxRevenue * 0.25))}</span>
+          <span>{formatPeso(0)}</span>
         </div>
         
         {/* Chart container */}
@@ -92,8 +148,10 @@ export default function RevenueChart() {
                     width="60"
                     height="200"
                     fill="transparent"
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => setHoveredPoint({ x: i, y, month: months[i], revenue: value * 1000 })}
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={() =>
+                      setHoveredPoint({ x: i, y, month: months[i], revenue: value })
+                    }
                     onMouseLeave={() => setHoveredPoint(null)}
                   />
                   {hoveredPoint?.month === months[i] && (
@@ -129,11 +187,13 @@ export default function RevenueChart() {
               style={{
                 left: `${(hoveredPoint.x / (revenueData.length - 1)) * 100}%`,
                 top: `${(hoveredPoint.y / 200) * 100 - 20}%`,
-                transform: 'translate(-50%, -100%)',
+                transform: "translate(-50%, -100%)",
               }}
             >
               <p className="text-sm font-semibold text-gray-900">{hoveredPoint.month}</p>
-              <p className="text-sm text-teal-600 font-medium">Revenue : ₱{(hoveredPoint.revenue / 1000).toFixed(3).replace(/\.?0+$/, '')}K</p>
+              <p className="text-sm text-teal-600 font-medium">
+                Revenue: {formatPeso(hoveredPoint.revenue)}
+              </p>
             </div>
           )}
           
@@ -152,15 +212,19 @@ export default function RevenueChart() {
       <div className="grid grid-cols-3 gap-6">
         <div>
           <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
-          <p className="text-2xl font-bold text-gray-900">₱525K</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {loading ? "..." : formatPeso(totalRevenue)}
+          </p>
         </div>
         <div>
-          <p className="text-sm text-gray-500 mb-1">vs Last Year</p>
-          <p className="text-2xl font-bold text-green-600">+18.2%</p>
+          <p className="text-sm text-gray-500 mb-1">Data Source</p>
+          <p className="text-2xl font-bold text-green-600">Paid Invoices</p>
         </div>
         <div>
           <p className="text-sm text-gray-500 mb-1">Avg Monthly</p>
-          <p className="text-2xl font-bold text-gray-900">₱43.8K</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {loading ? "..." : formatPeso(Math.round(avgMonthly))}
+          </p>
         </div>
       </div>
     </div>
