@@ -13,6 +13,8 @@ type Stats = {
   totalPatients: number;
   todayAppointments: number;
   monthlyRevenue: number;
+  treatmentsDone: number;
+  treatmentsTrendPercent: number;
 };
 
 export default function DashboardPage() {
@@ -134,9 +136,13 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Treatments Done"
-              value="156"
-              change="9.1% from last week"
-              changeType="increase"
+              value={loading ? "..." : stats?.treatmentsDone || 0}
+              change={
+                loading
+                  ? ""
+                  : `${Math.abs(stats?.treatmentsTrendPercent || 0).toFixed(1)}% from last week`
+              }
+              changeType={(stats?.treatmentsTrendPercent || 0) >= 0 ? "increase" : "decrease"}
               iconBg="bg-purple-50"
               icon={
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
