@@ -37,7 +37,7 @@ export const getUsers = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
-        const { name, email, role } = req.body;
+        const { name, email, role, phone } = req.body;
 
         const user = await User.findById(req.params.id);
         if (!user) {
@@ -47,6 +47,7 @@ export const updateUser = async (req, res) => {
         if (name) user.name = name;
         if (email) user.email = email;
         if (role) user.role = role;
+        if (phone !== undefined) user.phone = phone;
 
         const updated = await user.save();
         res.json({

@@ -1,47 +1,24 @@
 "use client";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { useRoleGuard } from "@/utils/roleGuard";
+import { User, FormValues, EditValues } from "@/components/users/types";
+import StaffTable from "@/components/users/StaffTable";
+import AddStaffModal from "@/components/users/AddStaffModal";
+import EditStaffModal from "@/components/users/EditStaffModal";
+import ResetPasswordModal from "@/components/users/ResetPasswordModal";
+import DeleteStaffModal from "@/components/users/DeleteStaffModal";
 
-type User = {
-  _id: string;
-  name: string;
-  email: string;
-  role: "admin" | "dentist" | "receptionist";
-};
+type RoleFilter = "all" | "dentist" | "receptionist" | "hygienist" | "assistant";
 
-type FormValues = {
-  name: string;
-  email: string;
-  password: string;
-  role: "dentist" | "receptionist";
-};
-
-type EditValues = {
-  name: string;
-  email: string;
-  role: "dentist" | "receptionist";
-};
-
-const INITIAL_FORM: FormValues = {
-  name: "",
-  email: "",
-  password: "",
-  role: "dentist",
-};
-
-function roleClasses(role: User["role"]) {
-  switch (role) {
-    case "admin":
-      return "bg-purple-100 text-purple-700";
-    case "dentist":
-      return "bg-teal-100 text-teal-700";
-    case "receptionist":
-    default:
-      return "bg-blue-100 text-blue-700";
-  }
-}
+const ROLE_FILTER_OPTIONS: Array<{ value: RoleFilter; label: string }> = [
+  { value: "all", label: "All Roles" },
+  { value: "dentist", label: "Dentist" },
+  { value: "receptionist", label: "Receptionist" },
+  { value: "hygienist", label: "Hygienist" },
+  { value: "assistant", label: "Assistant" },
+];
 
 export default function UsersPage() {
   useRoleGuard(["admin"]);
@@ -51,11 +28,16 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [form, setForm] = useState<FormValues>(INITIAL_FORM);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<EditValues | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const roleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -63,117 +45,91 @@ export default function UsersPage() {
       const data = await apiFetch<User[]>("/api/users");
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to load users:", err);
       setError(err instanceof Error ? err.message : "Failed to load staff accounts.");
     } finally {
       setLoading(false);
     }
   }, []);
 
+  useEffect(() => { loadUsers(); }, [loadUsers]);
+
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    function handleOutsideClick(e: MouseEvent) {
+      if (roleMenuRef.current && !roleMenuRef.current.contains(e.target as Node)) {
+        setIsRoleMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
+  const filteredUsers = users
+    .filter((u) => u.role !== "admin")
+    .filter((u) => roleFilter === "all" || u.role === roleFilter)
+    .filter((u) => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term) || (u.phone?.toLowerCase().includes(term) ?? false);
+    });
 
+  async function handleCreate(values: FormValues) {
+    setError(""); setSuccess("");
     try {
       setSaving(true);
-      await apiFetch<User>("/api/users", {
-        method: "POST",
-        body: JSON.stringify(form),
-      });
-      setSuccess(`${form.role === "dentist" ? "Dentist" : "Receptionist"} account created.`);
-      setForm(INITIAL_FORM);
+      await apiFetch<User>("/api/users", { method: "POST", body: JSON.stringify(values) });
+      setSuccess(`${values.role === "dentist" ? "Dentist" : "Receptionist"} account created.`);
+      setIsAddStaffOpen(false);
       await loadUsers();
     } catch (err) {
-      console.error("Failed to create user:", err);
       setError(err instanceof Error ? err.message : "Failed to create account.");
     } finally {
       setSaving(false);
     }
   }
 
-  function startEdit(user: User) {
-    if (user.role === "admin") return;
-    setEditingUserId(user._id);
-    setEditForm({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    });
-  }
-
-  function cancelEdit() {
-    setEditingUserId(null);
-    setEditForm(null);
-  }
-
-  async function saveEdit(userId: string) {
-    if (!editForm) return;
+  async function handleSaveEdit(values: EditValues) {
+    if (!editingUser) return;
+    setError(""); setSuccess("");
     try {
       setSaving(true);
-      setError("");
-      setSuccess("");
-      await apiFetch<User>(`/api/users/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(editForm),
-      });
+      await apiFetch<User>(`/api/users/${editingUser._id}`, { method: "PUT", body: JSON.stringify(values) });
       setSuccess("Staff account updated.");
-      cancelEdit();
+      setEditingUser(null);
       await loadUsers();
     } catch (err) {
-      console.error("Failed to update user:", err);
       setError(err instanceof Error ? err.message : "Failed to update account.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(user: User) {
-    if (user.role === "admin") {
-      setError("Admin accounts cannot be deleted from this screen.");
-      return;
-    }
-
-    const confirmed = window.confirm(`Delete ${user.name}'s account? This cannot be undone.`);
-    if (!confirmed) return;
-
+  async function handleResetPassword(userId: string, newPassword: string) {
+    setError(""); setSuccess("");
     try {
-      setDeletingId(user._id);
-      setError("");
-      setSuccess("");
-      await apiFetch(`/api/users/${user._id}`, { method: "DELETE" });
-      setSuccess("Staff account deleted.");
-      await loadUsers();
+      setResettingId(userId);
+      await apiFetch(`/api/users/${userId}/reset-password`, { method: "PUT", body: JSON.stringify({ password: newPassword }) });
+      setSuccess(`Password reset successfully.`);
+      setResetPasswordUser(null);
     } catch (err) {
-      console.error("Failed to delete user:", err);
-      setError(err instanceof Error ? err.message : "Failed to delete account.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  async function handleResetPassword(user: User) {
-    const newPassword = window.prompt(`Enter a new password for ${user.name} (min 6 chars):`);
-    if (!newPassword) return;
-
-    try {
-      setResettingId(user._id);
-      setError("");
-      setSuccess("");
-      await apiFetch(`/api/users/${user._id}/reset-password`, {
-        method: "PUT",
-        body: JSON.stringify({ password: newPassword }),
-      });
-      setSuccess(`Password reset for ${user.name}.`);
-    } catch (err) {
-      console.error("Failed to reset password:", err);
       setError(err instanceof Error ? err.message : "Failed to reset password.");
     } finally {
       setResettingId(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteUser) return;
+    setError(""); setSuccess("");
+    try {
+      setDeletingId(deleteUser._id);
+      await apiFetch(`/api/users/${deleteUser._id}`, { method: "DELETE" });
+      setSuccess("Staff account deleted.");
+      setDeleteUser(null);
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete account.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -182,264 +138,187 @@ export default function UsersPage() {
       <Sidebar />
 
       <div className="flex-1">
+        {/* Header */}
         <div className="bg-white border-b border-gray-100 px-8 py-4">
+          <p className="text-sm text-gray-400 mb-1">
+            <span className="hover:text-teal-500 cursor-pointer">Home</span>
+            <span className="mx-1">›</span>Staff
+          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+          <p className="text-sm text-gray-500">Create dentist and receptionist accounts</p>
+        </div>
+
+        <div className="p-8 space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard icon="users" label="Total Staff" value={users.filter((u) => u.role !== "admin").length} color="teal" />
+            <StatCard icon="calendar" label="Dentists" value={users.filter((u) => u.role === "dentist").length} color="emerald" />
+            <StatCard icon="check" label="Active" value={users.filter((u) => u.role !== "admin").length} color="green" />
+          </div>
+
+          {/* Toolbar */}
+          <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative w-full max-w-sm">
+                <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search staff..."
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Role filter dropdown */}
+              <div className="relative" ref={roleMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsRoleMenuOpen((p) => !p)}
+                  className="inline-flex min-w-[170px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700"
+                >
+                  <span>{ROLE_FILTER_OPTIONS.find((o) => o.value === roleFilter)?.label ?? "All Roles"}</span>
+                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isRoleMenuOpen && (
+                  <div className="absolute left-0 top-12 z-30 w-[190px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                    {ROLE_FILTER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setRoleFilter(opt.value); setIsRoleMenuOpen(false); }}
+                        className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors ${roleFilter === opt.value ? "bg-teal-50 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        <span className="inline-flex h-4 w-4 items-center justify-center text-gray-700">
+                          {roleFilter === opt.value && (
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setError(""); setSuccess(""); setIsAddStaffOpen(true); }}
+              className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-600 whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 4a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6V5a1 1 0 011-1z" />
+              </svg>
+              Add Staff
+            </button>
+          </div>
+
+          {/* Staff Directory */}
           <div>
-            <p className="text-sm text-gray-400 mb-1">
-              <span className="hover:text-teal-500 cursor-pointer">Home</span>
-              <span className="mx-1">›</span>
-              Staff
-            </p>
-            <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
-            <p className="text-sm text-gray-500">Create dentist and receptionist accounts</p>
+            <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-gray-900">Staff Directory</h2>
+                <span className="text-xs text-gray-400">{filteredUsers.length} accounts</span>
+              </div>
+
+              {error && !isAddStaffOpen && !editingUser && !resetPasswordUser && !deleteUser && (
+                <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>
+              )}
+              {success && !isAddStaffOpen && !editingUser && !resetPasswordUser && !deleteUser && (
+                <div className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-600">{success}</div>
+              )}
+
+              <StaffTable
+                users={filteredUsers}
+                loading={loading}
+                deletingId={deletingId}
+                resettingId={resettingId}
+                onEdit={setEditingUser}
+                onResetPassword={setResetPasswordUser}
+                onDelete={setDeleteUser}
+              />
+            </section>
           </div>
         </div>
 
-        <div className="p-8 grid grid-cols-1 xl:grid-cols-[380px,1fr] gap-6">
-          <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-fit">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Add Staff Account</h2>
-            <p className="text-sm text-gray-500 mb-5">Only admins can create login accounts.</p>
+      </div>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>
-            )}
-            {success && (
-              <div className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-600">{success}</div>
-            )}
+      {/* Modals */}
+      {isAddStaffOpen && (
+        <AddStaffModal
+          onSubmit={handleCreate}
+          onClose={() => setIsAddStaffOpen(false)}
+          saving={saving}
+          error={error}
+          success={success}
+        />
+      )}
+      {editingUser && (
+        <EditStaffModal
+          user={editingUser}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingUser(null)}
+          saving={saving}
+          error={error}
+          success={success}
+        />
+      )}
+      {resetPasswordUser && (
+        <ResetPasswordModal
+          user={resetPasswordUser}
+          resettingId={resettingId}
+          error={error}
+          onSubmit={handleResetPassword}
+          onClose={() => setResetPasswordUser(null)}
+        />
+      )}
+      {deleteUser && (
+        <DeleteStaffModal
+          user={deleteUser}
+          deletingId={deletingId}
+          error={error}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setDeleteUser(null)}
+        />
+      )}
+    </div>
+  );
+}
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="Dr. Jane Smith"
-                  required
-                />
-              </div>
+// ─── Inline mini helper ───────────────────────────────────────────────────────
+function StatCard({ icon, label, value, color }: { icon: string; label: string; value: number; color: string }) {
+  const colorMap: Record<string, string> = {
+    teal: "bg-teal-50 text-teal-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    green: "bg-green-50 text-green-600",
+  };
+  const icons: Record<string, React.ReactNode> = {
+    users: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+    ),
+    calendar: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z" />
+    ),
+    check: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    ),
+  };
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="jane@example.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Temporary Password</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="At least 6 characters"
-                  minLength={6}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={form.role}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      role: e.target.value as FormValues["role"],
-                    }))
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="dentist">Dentist</option>
-                  <option value="receptionist">Receptionist</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
-              >
-                {saving ? "Creating..." : "Create Account"}
-              </button>
-            </form>
-          </section>
-
-          <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Current Staff</h2>
-                <p className="text-sm text-gray-500">Existing login accounts in the system</p>
-              </div>
-              <button
-                onClick={loadUsers}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Refresh
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="py-12 text-center text-sm text-gray-400">Loading staff accounts...</div>
-            ) : users.length === 0 ? (
-              <div className="py-12 text-center text-sm text-gray-400">No staff accounts found.</div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-gray-200">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-left text-gray-600">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Name</th>
-                      <th className="px-4 py-3 font-medium">Email</th>
-                      <th className="px-4 py-3 font-medium">Role</th>
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {users.map((user) => (
-                      <tr key={user._id}>
-                        <td className="px-4 py-3 font-medium text-gray-900">
-                          {editingUserId === user._id ? (
-                            <input
-                              type="text"
-                              value={editForm?.name ?? ""}
-                              onChange={(e) =>
-                                setEditForm((prev) =>
-                                  prev ? { ...prev, name: e.target.value } : prev
-                                )
-                              }
-                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
-                            />
-                          ) : (
-                            user.name
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {editingUserId === user._id ? (
-                            <input
-                              type="email"
-                              value={editForm?.email ?? ""}
-                              onChange={(e) =>
-                                setEditForm((prev) =>
-                                  prev ? { ...prev, email: e.target.value } : prev
-                                )
-                              }
-                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
-                            />
-                          ) : (
-                            user.email
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {editingUserId === user._id ? (
-                            <select
-                              value={editForm?.role ?? "dentist"}
-                              onChange={(e) =>
-                                setEditForm((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        role: e.target.value as EditValues["role"],
-                                      }
-                                    : prev
-                                )
-                              }
-                              className="rounded-md border border-gray-300 px-2 py-1 text-sm"
-                            >
-                              <option value="dentist">dentist</option>
-                              <option value="receptionist">receptionist</option>
-                            </select>
-                          ) : (
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${roleClasses(user.role)}`}>
-                              {user.role}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {editingUserId === user._id ? (
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => saveEdit(user._id)}
-                                disabled={saving}
-                                title="Save"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                title="Cancel"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-end items-center gap-3">
-                              <button
-                                onClick={() => startEdit(user)}
-                                disabled={user.role === "admin"}
-                                title="Edit"
-                                className="inline-flex h-7 w-7 items-center justify-center text-teal-600 hover:text-teal-700 disabled:opacity-40"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleResetPassword(user)}
-                                disabled={resettingId === user._id}
-                                title="Reset Password"
-                                className="inline-flex h-7 w-7 items-center justify-center text-sky-600 hover:text-sky-700 disabled:opacity-50"
-                              >
-                                {resettingId === user._id ? (
-                                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                  </svg>
-                                ) : (
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 10-8 0v3H6a2 2 0 00-2 2v5a2 2 0 002 2h6m8-1v-3m0 0h-3m3 0l-3-3m3 3l-3 3" />
-                                  </svg>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleDelete(user)}
-                                disabled={deletingId === user._id || user.role === "admin"}
-                                title="Delete"
-                                className="inline-flex h-7 w-7 items-center justify-center text-red-500 hover:text-red-600 disabled:opacity-40"
-                              >
-                                {deletingId === user._id ? (
-                                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                  </svg>
-                                ) : (
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {icons[icon]}
+        </svg>
+      </div>
+      <div>
+        <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-xl font-semibold text-gray-900">{value}</p>
       </div>
     </div>
   );
