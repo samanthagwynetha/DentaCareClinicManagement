@@ -300,11 +300,7 @@ export default function Patients() {
               onDelete={handleDelete}
             />
 
-            <div className="px-1 py-4 border-t">
-              <p className="text-sm text-gray-600">
-                Showing {filteredPatients.length} of {patients.length} patients
-              </p>
-            </div>
+
           </div>
 
           {/* Add Patient Form Modal */}

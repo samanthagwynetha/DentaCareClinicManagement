@@ -159,9 +159,8 @@ export default function InvoiceTable({
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                      STATUS_STYLES[inv.status] ?? "bg-gray-100 text-gray-600"
-                    }`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[inv.status] ?? "bg-gray-100 text-gray-600"
+                      }`}
                   >
                     {inv.status}
                   </span>
