@@ -2,6 +2,7 @@ export type Patient = {
   _id: string;
   firstName: string;
   lastName: string;
+  email?: string;
 };
 
 export type DentistUser = {
