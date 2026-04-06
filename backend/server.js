@@ -8,6 +8,7 @@ import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
+import reminderRoutes from "./routes/reminderRoutes.js";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 
@@ -45,6 +46,9 @@ app.use("/api/account", accountRoutes);
 
 //Dashboard Routes
 app.use("/api/dashboard", dashboardRoutes);
+
+// Reminder Routes
+app.use("/api/reminders", reminderRoutes);
 
 // Test route
 app.get("/", (req, res) => {
