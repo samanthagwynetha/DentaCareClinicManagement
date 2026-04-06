@@ -19,6 +19,8 @@ function formatDate(dateStr: string) {
 export default function AppointmentList({ appointments, loading, onDeleted }: Props) {
   const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+  const [reminderMsg, setReminderMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -31,6 +33,33 @@ export default function AppointmentList({ appointments, loading, onDeleted }: Pr
       alert("Failed to delete appointment.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const sendReminder = async (appt: Appointment) => {
+    if (!appt.patient.email) {
+      setReminderMsg({ id: appt._id, ok: false, text: "No email on file for this patient." });
+      setTimeout(() => setReminderMsg(null), 3500);
+      return;
+    }
+    setSendingReminderId(appt._id);
+    try {
+      await apiFetch("/api/reminders/send", {
+        method: "POST",
+        body: JSON.stringify({
+          patientName: `${appt.patient.firstName} ${appt.patient.lastName}`,
+          patientEmail: appt.patient.email,
+          dentist: appt.dentist,
+          date: appt.date,
+          time: appt.time,
+        }),
+      });
+      setReminderMsg({ id: appt._id, ok: true, text: "Reminder sent!" });
+    } catch {
+      setReminderMsg({ id: appt._id, ok: false, text: "Failed to send reminder." });
+    } finally {
+      setSendingReminderId(null);
+      setTimeout(() => setReminderMsg(null), 3500);
     }
   };
 
@@ -92,6 +121,34 @@ export default function AppointmentList({ appointments, loading, onDeleted }: Pr
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
+                        {/* Send Reminder */}
+                        <div className="relative">
+                          <button
+                            title={appt.patient.email ? "Send Reminder" : "No patient email on file"}
+                            disabled={sendingReminderId === appt._id || !appt.patient.email}
+                            onClick={() => sendReminder(appt)}
+                            className="text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {sendingReminderId === appt._id ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </button>
+                          {reminderMsg?.id === appt._id && (
+                            <span className={`absolute right-6 top-0 whitespace-nowrap text-xs px-2 py-1 rounded-md shadow ${
+                              reminderMsg.ok ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+                            }`}>
+                              {reminderMsg.text}
+                            </span>
+                          )}
+                        </div>
+                        {/* Edit */}
                         <button
                           onClick={() => setEditingAppt(appt)}
                           className="text-teal-500 hover:text-teal-600 transition-colors">
@@ -99,6 +156,7 @@ export default function AppointmentList({ appointments, loading, onDeleted }: Pr
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
+                        {/* Delete */}
                         <button
                           onClick={() => setDeletingId(appt._id)}
                           className="text-red-400 hover:text-red-500 transition-colors"
