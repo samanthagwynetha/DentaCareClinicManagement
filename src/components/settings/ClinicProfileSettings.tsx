@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 
 export type ClinicSettings = {
   clinicName: string;
+  logoBase64?: string;
   phone: string;
   email: string;
   address: string;
@@ -14,6 +15,7 @@ export type ClinicSettings = {
 
 const DEFAULT_SETTINGS: ClinicSettings = {
   clinicName: "DentaCare Dental Clinic",
+  logoBase64: "",
   phone: "+63 912 345 6789",
   email: "info@dentacare.com",
   address: "123 Smile Ave, Manila",
@@ -24,17 +26,63 @@ const DEFAULT_SETTINGS: ClinicSettings = {
 export default function ClinicProfileSettings() {
   const [form, setForm] = useState<ClinicSettings>(DEFAULT_SETTINGS);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const data: ClinicSettings = await apiFetch("/api/settings/clinic");
+        if (data && Object.keys(data).length > 0) {
+
+          setForm({
+            clinicName: data.clinicName || DEFAULT_SETTINGS.clinicName,
+            logoBase64: data.logoBase64 || DEFAULT_SETTINGS.logoBase64,
+            phone: data.phone || DEFAULT_SETTINGS.phone,
+            email: data.email || DEFAULT_SETTINGS.email,
+            address: data.address || DEFAULT_SETTINGS.address,
+            openingTime: data.openingTime || DEFAULT_SETTINGS.openingTime,
+            closingTime: data.closingTime || DEFAULT_SETTINGS.closingTime,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load clinic settings", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
 
   function handleChange<K extends keyof ClinicSettings>(field: K, value: ClinicSettings[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File size must be under 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result && typeof event.target.result === "string") {
+        setForm((prev) => ({ ...prev, logoBase64: event.target!.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      // TODO: hook this up to backend API when available
-      // await apiFetch("/api/settings/clinic", { method: "PUT", body: JSON.stringify(form) });
+      await apiFetch("/api/settings/clinic", { 
+        method: "PUT", 
+        body: JSON.stringify(form) 
+      });
       console.log("Saving clinic settings", form);
     } catch (err) {
       console.error("Failed to save clinic settings", err);
@@ -57,34 +105,45 @@ export default function ClinicProfileSettings() {
         <div>
           <label className="text-sm font-medium text-gray-700 mb-3 block">Clinic Logo</label>
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50">
-              <svg
-                className="w-8 h-8 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 7a4 4 0 014-4h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 15l3-3 2 2 3-3 2 2"
-                />
-              </svg>
+            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
+              {form.logoBase64 ? (
+                <img src={form.logoBase64} alt="Clinic Logo" className="w-full h-full object-cover" />
+              ) : (
+                <svg
+                  className="w-8 h-8 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7a4 4 0 014-4h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 15l3-3 2 2 3-3 2 2"
+                  />
+                </svg>
+              )}
             </div>
             <div>
-              <button
-                type="button"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              <input
+                type="file"
+                id="logoUpload"
+                accept="image/png, image/jpeg"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+              <label
+                htmlFor="logoUpload"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
               >
                 Upload Logo
-              </button>
+              </label>
               <p className="mt-1 text-xs text-gray-400">PNG, JPG up to 2MB</p>
             </div>
           </div>
