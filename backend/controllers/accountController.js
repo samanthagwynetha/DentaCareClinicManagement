@@ -92,11 +92,11 @@ export const getNotificationPreferences = async (req, res) => {
     }
 
     res.json({
-      emailNotifications: user.emailNotifications,
-      smsReminders: user.smsReminders,
-      appointmentAlerts: user.appointmentAlerts,
-      billingAlerts: user.billingAlerts,
-      systemUpdates: user.systemUpdates,
+      emailNotifications: user.emailNotifications ?? true,
+      smsReminders: user.smsReminders ?? true,
+      appointmentAlerts: user.appointmentAlerts ?? true,
+      billingAlerts: user.billingAlerts ?? false,
+      systemUpdates: user.systemUpdates ?? false,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -149,10 +149,10 @@ export const getSystemPreferences = async (req, res) => {
     }
 
     res.json({
-      language: user.language,
-      dateFormat: user.dateFormat,
-      currency: user.currency,
-      theme: user.theme,
+      language: user.language ?? "English",
+      dateFormat: user.dateFormat ?? "MM/DD/YYYY",
+      currency: user.currency ?? "PHP",
+      theme: user.theme ?? "Light",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -11,6 +11,8 @@ import accountRoutes from "./routes/accountRoutes.js";
 import reminderRoutes from "./routes/reminderRoutes.js";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import settingsRoutes from "./src/routes/settingsRoutes.js";
+import notificationRoutes from "./src/routes/notificationRoutes.js";
 
 dotenv.config();
 
@@ -49,6 +51,13 @@ app.use("/api/dashboard", dashboardRoutes);
 
 // Reminder Routes
 app.use("/api/reminders", reminderRoutes);
+
+// Settings Routes
+app.use("/api/settings", settingsRoutes);
+
+// Notifications Routes
+app.use("/api/notifications", notificationRoutes);
+
 
 // Test route
 app.get("/", (req, res) => {
