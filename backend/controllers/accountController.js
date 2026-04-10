@@ -2,7 +2,7 @@ import User from "../models/User.js";
 
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("name email role phone");
+    const user = await User.findById(req.user._id).select("name email role phone avatarBase64");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -13,6 +13,7 @@ export const getProfile = async (req, res) => {
       email: user.email,
       role: user.role,
       phone: user.phone || "",
+      avatarBase64: user.avatarBase64 || "",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -21,7 +22,7 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { name, email, phone } = req.body;
+    const { name, email, phone, avatarBase64 } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -31,6 +32,7 @@ export const updateProfile = async (req, res) => {
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
     if (phone !== undefined) user.phone = phone;
+    if (avatarBase64 !== undefined) user.avatarBase64 = avatarBase64;
 
     const updated = await user.save();
 
@@ -40,6 +42,7 @@ export const updateProfile = async (req, res) => {
       email: updated.email,
       role: updated.role,
       phone: updated.phone || "",
+      avatarBase64: updated.avatarBase64 || "",
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

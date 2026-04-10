@@ -3,6 +3,7 @@ import { useRoleGuard } from "@/utils/roleGuard";
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
+import UserProfileHeader from "@/components/UserProfileHeader";
 import PatientForm, { PatientFormValues } from "@/components/patients/PatientForm";
 import PatientTable from "@/components/patients/PatientTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -228,15 +229,7 @@ export default function Patients() {
               <div className="h-10 w-px bg-gray-300"></div>
 
               {/* User Profile */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  DA
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-800">Dr. Anderson</p>
-                  <p className="text-xs text-gray-500">General Dentist</p>
-                </div>
-              </div>
+              <UserProfileHeader />
             </div>
           </div>
 

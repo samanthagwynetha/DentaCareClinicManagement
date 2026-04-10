@@ -7,6 +7,7 @@ import RecentPatients from "@/components/RecentPatients";
 import RevenueChart from "@/components/RevenueChart";
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
+import UserProfileHeader from "@/components/UserProfileHeader";
 import { useRoleGuard } from "@/utils/roleGuard";
 import { apiFetch } from "@/lib/api";
 
@@ -76,15 +77,7 @@ export default function DashboardPage() {
               <NotificationBell />
               
               {/* User Profile */}
-              <div className="flex items-center gap-3 ml-2">
-                <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-semibold">
-                  DA
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Dr. Anderson</p>
-                  <p className="text-xs text-gray-500">General Dentist</p>
-                </div>
-              </div>
+              <UserProfileHeader />
             </div>
           </div>
         </div>
