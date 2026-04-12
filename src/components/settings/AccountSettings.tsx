@@ -8,6 +8,7 @@ export type AccountProfile = {
   email: string;
   role: string;
   phone: string;
+  avatarBase64: string;
 };
 
 type PasswordForm = {
@@ -39,6 +40,7 @@ export default function AccountSettings() {
           email: data.email,
           role: data.role,
           phone: data.phone || "",
+          avatarBase64: data.avatarBase64 || "",
         });
       } catch (err) {
         console.error("Failed to load account profile", err);
@@ -63,6 +65,7 @@ export default function AccountSettings() {
             name: profile.name,
             email: profile.email,
             phone: profile.phone,
+            avatarBase64: profile.avatarBase64,
           }),
         }
       );
@@ -71,6 +74,7 @@ export default function AccountSettings() {
         email: updated.email,
         role: updated.role,
         phone: updated.phone || "",
+        avatarBase64: updated.avatarBase64 || "",
       });
       setMessage("Profile updated successfully.");
     } catch (err) {
@@ -79,6 +83,23 @@ export default function AccountSettings() {
     } finally {
       setProfileSaving(false);
     }
+  }
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Avatar image must be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setProfile((prev) => (prev ? { ...prev, avatarBase64: base64 } : null));
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handlePasswordSave(e: React.FormEvent) {
@@ -130,6 +151,58 @@ export default function AccountSettings() {
             </div>
           )}
 
+          <div className="flex items-center gap-6">
+            <div className="relative w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
+              {profile?.avatarBase64 ? (
+                <img
+                  src={profile.avatarBase64}
+                  alt="Profile Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <svg
+                  className="w-10 h-10 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                <label className="cursor-pointer text-white text-xs font-medium">
+                  Upload
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/png, image/jpeg"
+                    onChange={handleAvatarUpload}
+                  />
+                </label>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Profile Picture</h3>
+              <p className="text-xs text-gray-500 mt-1 mb-3">
+                JPG or PNG. Max size of 2MB.
+              </p>
+              <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                Change Photo
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/png, image/jpeg"
+                  onChange={handleAvatarUpload}
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -141,7 +214,7 @@ export default function AccountSettings() {
                   setProfile((prev) =>
                     prev
                       ? { ...prev, name: e.target.value }
-                      : { name: e.target.value, email: "", role: "", phone: "" }
+                      : { name: e.target.value, email: "", role: "", phone: "", avatarBase64: "" }
                   )
                 }
               />
@@ -156,7 +229,7 @@ export default function AccountSettings() {
                   setProfile((prev) =>
                     prev
                       ? { ...prev, email: e.target.value }
-                      : { name: "", email: e.target.value, role: "", phone: "" }
+                      : { name: "", email: e.target.value, role: "", phone: "", avatarBase64: "" }
                   )
                 }
               />
@@ -184,7 +257,7 @@ export default function AccountSettings() {
                   setProfile((prev) =>
                     prev
                       ? { ...prev, phone: e.target.value }
-                      : { name: "", email: "", role: "", phone: e.target.value }
+                      : { name: "", email: "", role: "", phone: e.target.value, avatarBase64: "" }
                   )
                 }
               />

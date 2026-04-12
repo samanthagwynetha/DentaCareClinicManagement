@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import StatCard from "@/components/StatCard";
 import TodayAppointments from "@/components/TodayAppointments";
 import QuickActions from "@/components/QuickActions";
@@ -7,6 +8,7 @@ import RecentPatients from "@/components/RecentPatients";
 import RevenueChart from "@/components/RevenueChart";
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
+import UserProfileHeader from "@/components/UserProfileHeader";
 import { useRoleGuard } from "@/utils/roleGuard";
 import { apiFetch } from "@/lib/api";
 
@@ -22,20 +24,25 @@ export default function DashboardPage() {
   useRoleGuard(["admin", "dentist", "receptionist"]);
   
   const [stats, setStats] = useState<Stats | null>(null);
+  const [profile, setProfile] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStats() {
+    async function loadData() {
       try {
-        const data = await apiFetch<Stats>("/api/dashboard/stats");
-        setStats(data);
+        const [statsData, profileData] = await Promise.all([
+          apiFetch<Stats>("/api/dashboard/stats"),
+          apiFetch<{ name: string }>("/api/account/me")
+        ]);
+        setStats(statsData);
+        setProfile(profileData);
       } catch (err) {
-        console.error("Failed to load stats:", err);
+        console.error("Failed to load dashboard data:", err);
       } finally {
         setLoading(false);
       }
     }
-    loadStats();
+    loadData();
   }, []);
 
   return (
@@ -50,7 +57,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-500">Welcome back, Dr. Anderson</p>
+              <p className="text-sm text-gray-500">Welcome back, {profile?.name || "User"}</p>
             </div>
             <div className="flex items-center gap-3">
               {/* Search Bar */}
@@ -66,25 +73,17 @@ export default function DashboardPage() {
               </div>
               
               {/* Calendar Icon */}
-              <button className="p-2 hover:bg-gray-50 rounded-lg">
+              <Link href="/appointments" className="p-2 hover:bg-gray-50 rounded-lg">
                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </button>
+              </Link>
               
               {/* Notification Bell */}
               <NotificationBell />
               
               {/* User Profile */}
-              <div className="flex items-center gap-3 ml-2">
-                <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-semibold">
-                  DA
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Dr. Anderson</p>
-                  <p className="text-xs text-gray-500">General Dentist</p>
-                </div>
-              </div>
+              <UserProfileHeader />
             </div>
           </div>
         </div>

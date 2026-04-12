@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
+import UserProfileHeader from "@/components/UserProfileHeader";
 import { useRoleGuard } from "@/utils/roleGuard";
 import AppointmentCalendar from "@/components/appointments/AppointmentCalendar";
 import AppointmentList from "@/components/appointments/AppointmentList";
@@ -75,15 +76,7 @@ export default function AppointmentsPage() {
 
               <NotificationBell />
 
-              <div className="flex items-center gap-2 ml-1">
-                <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-semibold">
-                  DA
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 leading-tight">Dr. Anderson</p>
-                  <p className="text-xs text-gray-500">General Dentist</p>
-                </div>
-              </div>
+              <UserProfileHeader />
             </div>
           </div>
         </div>

@@ -73,6 +73,11 @@ const userSchema = new mongoose.Schema(
             enum: ['admin', 'dentist', 'receptionist'],
             default: 'receptionist',
         },
+
+        avatarBase64: {
+            type: String,
+            default: "",
+        },
     },
     { timestamps: true }
 );
