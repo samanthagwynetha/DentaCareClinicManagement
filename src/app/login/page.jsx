@@ -42,11 +42,10 @@ export default function LoginPage() {
       {/* Left Panel */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden login-panel-gradient">
 
-        {/* Moving colour blobs */}
-        <div className="absolute top-[-80px] left-[-80px] w-[420px] h-[420px] bg-teal-700/60 blur-[120px] rounded-full pointer-events-none blob-1" />
-        <div className="absolute bottom-[-60px] right-[-60px] w-[380px] h-[380px] bg-cyan-400/40 blur-[120px] rounded-full pointer-events-none blob-2" />
-        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-emerald-400/30 blur-[100px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 blob-3" />
-        <div className="absolute top-1/4 right-0 w-[200px] h-[200px] bg-teal-300/25 blur-[80px] rounded-full pointer-events-none" />
+        {/* Subtle colour blobs for depth */}
+        <div className="absolute top-[-80px] left-[-80px] w-[420px] h-[420px] bg-teal-700/20 blur-[140px] rounded-full pointer-events-none blob-1" />
+        <div className="absolute bottom-[-60px] right-[-60px] w-[380px] h-[380px] bg-cyan-400/15 blur-[140px] rounded-full pointer-events-none blob-2" />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-emerald-400/10 blur-[120px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 blob-3" />
 
         {/* Content – pinned to edges */}
         <div className="relative z-10 flex flex-col justify-between h-full w-full p-12">

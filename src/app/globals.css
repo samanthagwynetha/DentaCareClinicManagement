@@ -28,11 +28,20 @@
   animation: gradientShift 8s ease infinite;
 }
 
-/* ── Login left panel dark gradient ── */
+/* ── Login left panel: photo + teal color-grade overlay ── */
 .login-panel-gradient {
-  background: linear-gradient(135deg, #0f4c47 0%, #0d7a72 25%, #1ebbb0 60%, #5ee3d8 100%);
-  background-size: 300% 300%;
-  animation: gradientShift 10s ease infinite;
+  background-image:
+    linear-gradient(
+      135deg,
+      rgba(10, 60, 56, 0.72) 0%,
+      rgba(14, 116, 108, 0.58) 40%,
+      rgba(30, 187, 176, 0.45) 75%,
+      rgba(20, 100, 96, 0.65) 100%
+    ),
+    url('/dental-clinic-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* Blob drift animations */
