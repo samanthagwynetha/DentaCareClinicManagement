@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function BillingPage() {
-  useRoleGuard(["receptionist", "admin"]);
+  useRoleGuard(["receptionist", "admin", "dentist"]);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +28,13 @@ export default function BillingPage() {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [search, setSearch] = useState("");
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(localStorage.getItem("role"));
+    }
+  }, []);
 
   const loadInvoices = useCallback(async () => {
     setLoading(true);
@@ -140,21 +147,24 @@ export default function BillingPage() {
                 ))}
               </select>
 
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Generate Invoice
-              </button>
+              {role !== "dentist" && (
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Generate Invoice
+                </button>
+              )}
             </div>
 
             <InvoiceTable
               invoices={filtered}
               allInvoices={invoices}
               loading={loading}
+              role={role}
               onView={openView}
               onEdit={openEdit}
               onRefresh={loadInvoices}
