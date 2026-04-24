@@ -10,6 +10,11 @@ const invoiceSchema = new mongoose.Schema(
         appointment: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Appointment",
+        },
+        issuedByUserId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
         }, 
         services: [
             {
