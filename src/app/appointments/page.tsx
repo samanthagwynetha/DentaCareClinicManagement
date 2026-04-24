@@ -6,12 +6,13 @@ import UserProfileHeader from "@/components/UserProfileHeader";
 import { useRoleGuard } from "@/utils/roleGuard";
 import AppointmentCalendar from "@/components/appointments/AppointmentCalendar";
 import AppointmentList from "@/components/appointments/AppointmentList";
+import { getRole } from "@/utils/auth";
 import AppointmentModal from "@/components/appointments/AppointmentModal";
 import { Appointment, DentistUser } from "@/components/appointments/types";
 import { apiFetch } from "@/lib/api";
 
 export default function AppointmentsPage() {
-  useRoleGuard(["dentist", "receptionist", "admin"]);
+  const isChecking = useRoleGuard(["dentist", "receptionist", "admin"]);
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [showModal, setShowModal] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -19,8 +20,10 @@ export default function AppointmentsPage() {
   const [dentists, setDentists] = useState<DentistUser[]>([]);
   const [selectedDentist, setSelectedDentist] = useState("");
   const [search, setSearch] = useState("");
+  const [role, setRole] = useState<string | null>(null);
 
   const loadAppointments = useCallback(async () => {
+    if (isChecking) return;
     try {
       const data = await apiFetch<Appointment[]>("/api/appointments");
       setAppointments(data);
@@ -32,9 +35,20 @@ export default function AppointmentsPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(getRole());
+    }
     loadAppointments();
     apiFetch<DentistUser[]>("/api/users/dentists").then(setDentists).catch(() => {});
-  }, [loadAppointments]);
+  }, [loadAppointments, isChecking]);
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -151,7 +165,7 @@ export default function AppointmentsPage() {
             return (
               <>
                 {view === "calendar" && <AppointmentCalendar appointments={filtered} loading={loading} />}
-                {view === "list" && <AppointmentList appointments={filtered} loading={loading} onDeleted={loadAppointments} />}
+                {view === "list" && <AppointmentList appointments={filtered} loading={loading} role={role} onDeleted={loadAppointments} />}
               </>
             );
           })()}

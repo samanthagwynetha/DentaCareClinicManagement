@@ -1,4 +1,5 @@
 "use client";
+import { getRole } from "@/utils/auth";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -10,7 +11,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setRole(localStorage.getItem("role"));
+      setRole(getRole());
     }
   }, []);
 

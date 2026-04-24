@@ -9,9 +9,10 @@ import PatientTable from "@/components/patients/PatientTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type { Patient } from "@/components/patients/types";
 import { apiFetch } from "@/lib/api";
+import { getRole } from "@/utils/auth";
 
 export default function Patients() {
-  useRoleGuard(["dentist", "receptionist", "admin"]);
+  const isChecking = useRoleGuard(["dentist", "receptionist", "admin"]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ export default function Patients() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   // Dummy data
   const dummyPatients: Patient[] = [
@@ -76,10 +78,16 @@ export default function Patients() {
   ];
 
   useEffect(() => {
+    if (isChecking) return;
+    const role = getRole();
+    if (role) {
+      setRole(role);
+    }
     fetchPatients();
-  }, []);
+  }, [isChecking]);
 
   const fetchPatients = async () => {
+    if (isChecking) return;
     setError("");
     try {
       const data = await apiFetch<Patient[]>("/api/patients");
@@ -170,6 +178,14 @@ export default function Patients() {
           .includes(searchTerm.toLowerCase())
       )
     : [];
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -266,20 +282,23 @@ export default function Patients() {
                   />
                 </svg>
               </div>
-              <button
-                onClick={() => setShowForm(true)}
-                className="bg-teal-500 text-white px-5 py-2.5 rounded-lg hover:bg-teal-600 flex items-center transition-colors text-sm font-medium"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Patient
-              </button>
+              {role !== "dentist" && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="bg-teal-500 text-white px-5 py-2.5 rounded-lg hover:bg-teal-600 flex items-center transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Patient
+                </button>
+              )}
             </div>
 
             <PatientTable
               patients={filteredPatients}
               loading={loading}
+              role={role}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

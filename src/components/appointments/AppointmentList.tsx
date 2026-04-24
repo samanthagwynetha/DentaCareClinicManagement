@@ -8,6 +8,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 type Props = {
   appointments: Appointment[];
   loading: boolean;
+  role?: string | null;
   onDeleted: () => void;
 };
 
@@ -16,7 +17,7 @@ function formatDate(dateStr: string) {
   return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
-export default function AppointmentList({ appointments, loading, onDeleted }: Props) {
+export default function AppointmentList({ appointments, loading, role, onDeleted }: Props) {
   const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
@@ -157,14 +158,16 @@ export default function AppointmentList({ appointments, loading, onDeleted }: Pr
                           </svg>
                         </button>
                         {/* Delete */}
-                        <button
-                          onClick={() => setDeletingId(appt._id)}
-                          className="text-red-400 hover:text-red-500 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        {role !== "receptionist" && (
+                          <button
+                            onClick={() => setDeletingId(appt._id)}
+                            className="text-red-400 hover:text-red-500 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getRole } from "@/utils/auth";
 import StatCard from "@/components/StatCard";
 import TodayAppointments from "@/components/TodayAppointments";
 import QuickActions from "@/components/QuickActions";
@@ -18,16 +19,27 @@ type Stats = {
   monthlyRevenue: number;
   treatmentsDone: number;
   treatmentsTrendPercent: number;
+  patientsTrendPercent: number;
+  appointmentsRemaining: number;
+  revenueTrendPercent: number;
 };
 
 export default function DashboardPage() {
-  useRoleGuard(["admin", "dentist", "receptionist"]);
+  const isChecking = useRoleGuard(["admin", "dentist", "receptionist"]);
   
   const [stats, setStats] = useState<Stats | null>(null);
   const [profile, setProfile] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    if (isChecking) return;
+
+    const role = getRole();
+    if (role) {
+      setIsAdmin(role === "admin");
+    }
+
     async function loadData() {
       try {
         const [statsData, profileData] = await Promise.all([
@@ -43,7 +55,15 @@ export default function DashboardPage() {
       }
     }
     loadData();
-  }, []);
+  }, [isChecking]);
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -91,12 +111,12 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         <div className="p-8">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6 mb-8`}>
             <StatCard
               title="Total Patients"
               value={loading ? "..." : stats?.totalPatients || 0}
-              change="12.5% from last month"
-              changeType="increase"
+              change={loading ? "" : `${Math.abs(stats?.patientsTrendPercent || 0).toFixed(1)}% from last month`}
+              changeType={(stats?.patientsTrendPercent || 0) >= 0 ? "increase" : "decrease"}
               iconBg="bg-blue-50"
               icon={
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,8 +127,8 @@ export default function DashboardPage() {
             <StatCard
               title="Today's Appointments"
               value={loading ? "..." : stats?.todayAppointments || 0}
-              change="5 remaining"
-              changeType="increase"
+              change={loading ? "" : `${stats?.appointmentsRemaining || 0} remaining`}
+              changeType="neutral"
               iconBg="bg-green-50"
               icon={
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,19 +136,21 @@ export default function DashboardPage() {
                 </svg>
               }
             />
-            <StatCard
-              title="Monthly Revenue"
-              value={loading ? "..." : `₱${stats?.monthlyRevenue?.toLocaleString() || "0.00"}`}
-              change="18.2% from last month"
-              changeType="increase"
-              iconBg="bg-yellow-50"
-              icon={
-                <svg className="w-6 h-6 text-yellow-600" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/>
-                  <text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fill="currentColor">₱</text>
-                </svg>
-              }
-            />
+            {isAdmin && (
+              <StatCard
+                title="Monthly Revenue"
+                value={loading ? "..." : `₱${stats?.monthlyRevenue?.toLocaleString() || "0.00"}`}
+                change={loading ? "" : `${Math.abs(stats?.revenueTrendPercent || 0).toFixed(1)}% from last month`}
+                changeType={(stats?.revenueTrendPercent || 0) >= 0 ? "increase" : "decrease"}
+                iconBg="bg-yellow-50"
+                icon={
+                  <svg className="w-6 h-6 text-yellow-600" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/>
+                    <text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fill="currentColor">₱</text>
+                  </svg>
+                }
+              />
+            )}
             <StatCard
               title="Treatments Done"
               value={loading ? "..." : stats?.treatmentsDone || 0}
@@ -148,10 +170,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 space-y-6">
-              <TodayAppointments />
-              <RevenueChart />
+          <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6 mb-8`}>
+            <div className={`${isAdmin ? 'lg:col-span-2 space-y-6' : 'lg:col-span-1 flex flex-col'}`}>
+              <div className={isAdmin ? "" : "flex-1"}>
+                <TodayAppointments />
+              </div>
+              {isAdmin && <RevenueChart />}
             </div>
             <div className="space-y-6">
               <QuickActions />

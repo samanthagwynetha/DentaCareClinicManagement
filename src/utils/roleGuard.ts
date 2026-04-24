@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getToken, getRole } from "./auth";
 
 export const useRoleGuard = (allowedRoles: string[]) => {
   const router = useRouter();
@@ -8,8 +9,8 @@ export const useRoleGuard = (allowedRoles: string[]) => {
 
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      const role = localStorage.getItem("role");
+      const token = getToken();
+      const role = getRole();
       
       if (!token) {
         router.replace("/login");

@@ -180,7 +180,7 @@ export default function AccountSettings() {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/png, image/jpeg"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                     onChange={handleAvatarUpload}
                   />
                 </label>
@@ -196,7 +196,7 @@ export default function AccountSettings() {
                 <input
                   type="file"
                   className="hidden"
-                  accept="image/png, image/jpeg"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                   onChange={handleAvatarUpload}
                 />
               </label>

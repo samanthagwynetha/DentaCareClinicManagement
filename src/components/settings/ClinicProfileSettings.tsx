@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { getRole } from "@/utils/auth";
 
 export type ClinicSettings = {
   clinicName: string;
@@ -24,11 +25,20 @@ const DEFAULT_SETTINGS: ClinicSettings = {
 };
 
 export default function ClinicProfileSettings() {
-  const [form, setForm] = useState<ClinicSettings>(DEFAULT_SETTINGS);
-  const [saving, setSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  const [form, setForm] = useState<ClinicSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
+    const role = getRole();
+    if (role) {
+      setIsAdmin(role === "admin");
+    }
+
     async function loadSettings() {
       try {
         const data: ClinicSettings = await apiFetch("/api/settings/clinic");
@@ -79,9 +89,9 @@ export default function ClinicProfileSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiFetch("/api/settings/clinic", { 
-        method: "PUT", 
-        body: JSON.stringify(form) 
+      await apiFetch("/api/settings/clinic", {
+        method: "PUT",
+        body: JSON.stringify(form)
       });
       console.log("Saving clinic settings", form);
     } catch (err) {
@@ -134,13 +144,17 @@ export default function ClinicProfileSettings() {
               <input
                 type="file"
                 id="logoUpload"
-                accept="image/png, image/jpeg"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 className="hidden"
                 onChange={handleLogoUpload}
+                disabled={!isAdmin}
               />
               <label
-                htmlFor="logoUpload"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                htmlFor={isAdmin ? "logoUpload" : undefined}
+                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium ${isAdmin
+                  ? "text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                  : "text-gray-400 bg-gray-50 cursor-not-allowed"
+                  }`}
               >
                 Upload Logo
               </label>
@@ -155,18 +169,20 @@ export default function ClinicProfileSettings() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Clinic Name</label>
             <input
               type="text"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               value={form.clinicName}
               onChange={(e) => handleChange("clinicName", e.target.value)}
+              disabled={!isAdmin}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               value={form.email}
               onChange={(e) => handleChange("email", e.target.value)}
+              disabled={!isAdmin}
             />
           </div>
         </div>
@@ -177,18 +193,20 @@ export default function ClinicProfileSettings() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="text"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               value={form.phone}
               onChange={(e) => handleChange("phone", e.target.value)}
+              disabled={!isAdmin}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             <input
               type="text"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               value={form.address}
               onChange={(e) => handleChange("address", e.target.value)}
+              disabled={!isAdmin}
             />
           </div>
         </div>
@@ -201,45 +219,43 @@ export default function ClinicProfileSettings() {
               <label className="block text-xs font-medium text-gray-500 mb-1">Opening Time</label>
               <input
                 type="text"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                 value={form.openingTime}
                 onChange={(e) => handleChange("openingTime", e.target.value)}
+                disabled={!isAdmin}
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Closing Time</label>
               <input
                 type="text"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                 value={form.closingTime}
                 onChange={(e) => handleChange("closingTime", e.target.value)}
+                disabled={!isAdmin}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {isAdmin ? (
+          <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
+            <p className="text-sm text-gray-500 italic">Only administrators can edit the clinic profile.</p>
+          </div>
+        )}
       </form>
     </div>
   );

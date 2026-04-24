@@ -6,11 +6,12 @@ import type { Patient } from "./types";
 type Props = {
   patients: Patient[];
   loading: boolean;
+  role?: string | null;
   onEdit: (patient: Patient) => void;
   onDelete: (patient: Patient) => void;
 };
 
-export default function PatientTable({ patients, loading, onEdit, onDelete }: Props) {
+export default function PatientTable({ patients, loading, role, onEdit, onDelete }: Props) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -59,7 +60,9 @@ export default function PatientTable({ patients, loading, onEdit, onDelete }: Pr
               <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600">Contact</th>
               <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600">Gender</th>
               <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600">Birth Date</th>
-              <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-600 w-32">Actions</th>
+              {role !== "dentist" && (
+                <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-600 w-32">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -78,34 +81,38 @@ export default function PatientTable({ patients, loading, onEdit, onDelete }: Pr
                     ? new Date(patient.birthDate).toLocaleDateString()
                     : "N/A"}
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-medium">
-                  <button
-                    onClick={() => onEdit(patient)}
-                    className="text-teal-500 hover:text-teal-700 mr-3 transition-colors inline-flex"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => onDelete(patient)}
-                    className="text-red-500 hover:text-red-700 transition-colors inline-flex"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </td>
+                {role !== "dentist" && (
+                  <td className="px-6 py-4 text-right text-sm font-medium">
+                    <button
+                      onClick={() => onEdit(patient)}
+                      className="text-teal-500 hover:text-teal-700 mr-3 transition-colors inline-flex"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                    {role === "admin" && (
+                      <button
+                        onClick={() => onDelete(patient)}
+                        className="text-red-500 hover:text-red-700 transition-colors inline-flex"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

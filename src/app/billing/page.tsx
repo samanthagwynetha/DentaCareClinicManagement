@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { getRole } from "@/utils/auth";
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
 import UserProfileHeader from "@/components/UserProfileHeader";
@@ -19,7 +20,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function BillingPage() {
-  useRoleGuard(["receptionist", "admin", "dentist"]);
+  const isChecking = useRoleGuard(["receptionist", "admin", "dentist"]);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,12 +32,14 @@ export default function BillingPage() {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isChecking) return;
     if (typeof window !== "undefined") {
-      setRole(localStorage.getItem("role"));
+      setRole(getRole());
     }
-  }, []);
+  }, [isChecking]);
 
   const loadInvoices = useCallback(async () => {
+    if (isChecking) return;
     setLoading(true);
     try {
       const data = await apiFetch<Invoice[]>("/api/invoices");
@@ -46,11 +49,19 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isChecking]);
 
   useEffect(() => {
     loadInvoices();
-  }, [loadInvoices]);
+  }, [loadInvoices, isChecking]);
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+      </div>
+    );
+  }
 
   const filtered = invoices
     .filter((i) => !statusFilter || i.status === statusFilter)
