@@ -12,6 +12,9 @@ import reminderRoutes from "./routes/reminderRoutes.js";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import settingsRoutes from "./src/routes/settingsRoutes.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 
 dotenv.config();
@@ -21,9 +24,25 @@ const app = express();
 connectDB();
 
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security Middlewares
+app.use(helmet()); // Sets various HTTP headers for security
+
+// Rate Limiting (Prevent Brute Force)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes"
+});
+app.use("/api/", limiter); // Apply rate limiter to all API routes
+
+// CORS Configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true,
+}));
+
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 // Patient Routes
 app.use("/api/patients", patientRoutes);
@@ -63,6 +82,10 @@ app.use("/api/notifications", notificationRoutes);
 app.get("/", (req, res) => {
   res.send("Dental Clinic Backend is running 🦷");
 });
+
+// Error Handling Middlewares (Must be at the end)
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
