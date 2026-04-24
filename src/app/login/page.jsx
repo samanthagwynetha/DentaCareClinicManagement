@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { setAuth } from "../../utils/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -17,7 +19,7 @@ export default function LoginPage() {
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -28,8 +30,7 @@ export default function LoginPage() {
       }
 
       // save token
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+      setAuth(data.token, data.role, rememberMe);
 
       router.push("/dashboard");
     } catch (err) {
@@ -141,6 +142,8 @@ export default function LoginPage() {
                   <input
                     type="checkbox"
                     id="remember"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="peer appearance-none w-4 h-4 border border-gray-300 rounded-full checked:bg-white checked:border-teal-500 cursor-pointer transition-all"
                   />
                   <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-teal-500 scale-0 peer-checked:scale-100 transition-transform pointer-events-none"></div>

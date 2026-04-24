@@ -1,18 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { clearAuth } from "../utils/auth";
 
 export default function LogoutButton() {
   const router = useRouter();
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+  const handleLogout = () => {
+    clearAuth();
     router.push("/login");
   };
 
   return (
     <button 
-      onClick={logout} 
+      onClick={handleLogout} 
       className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-all"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

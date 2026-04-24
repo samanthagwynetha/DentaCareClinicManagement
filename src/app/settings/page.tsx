@@ -16,9 +16,17 @@ const TABS = [
 ] as const;
 
 export default function SettingsPage() {
-  useRoleGuard(["admin", "dentist", "receptionist"]);
+  const isChecking = useRoleGuard(["admin", "dentist", "receptionist"]);
 
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["id"]>("clinic");
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">

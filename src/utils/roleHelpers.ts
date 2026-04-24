@@ -1,14 +1,14 @@
 // Utility functions for role-based access control
 
+import { getRole } from "./auth";
+
 /**
  * Check if the current user has any of the specified roles
  * @param allowedRoles - Array of roles to check against
  * @returns true if user has one of the allowed roles, false otherwise
  */
 export const hasRole = (allowedRoles: string[]): boolean => {
-  if (typeof window === 'undefined') return false;
-  
-  const role = localStorage.getItem('role');
+  const role = getRole();
   return role ? allowedRoles.includes(role) : false;
 };
 
@@ -41,8 +41,7 @@ export const isReceptionist = (): boolean => {
  * @returns the user's role or null if not found
  */
 export const getCurrentRole = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('role');
+  return getRole();
 };
 
 /**

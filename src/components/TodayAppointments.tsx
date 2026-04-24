@@ -79,7 +79,7 @@ export default function TodayAppointments() {
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
@@ -95,9 +95,9 @@ export default function TodayAppointments() {
         </button>
       </div>
 
-      <div className="space-y-0 mt-4">
+      <div className="space-y-0 mt-4 flex-1 flex flex-col">
         {!loading && appointments.length === 0 && (
-          <div className="py-8 text-center text-sm text-gray-400">
+          <div className="py-8 text-center text-sm text-gray-400 flex-1 flex items-center justify-center min-h-[150px]">
             No appointments for today.
           </div>
         )}
