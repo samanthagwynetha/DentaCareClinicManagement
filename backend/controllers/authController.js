@@ -1,9 +1,9 @@
-import User from "../models/User.js";
+import User from "../src/models/User.js";
 import generateToken from "../utils/generateToken.js";
 
 export const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body;
         
         if (!email || !password) {
             return res.status(400).json({ message: "Email and password are required" });
@@ -33,7 +33,7 @@ export const login = async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            token: generateToken(user._id, user.role),
+            token: generateToken(user._id, user.role, rememberMe),
         });
     } catch (error) {
         console.error('Login error:', error);

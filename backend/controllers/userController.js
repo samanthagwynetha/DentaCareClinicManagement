@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../src/models/User.js';
 
 // Get all dentists (accessible to all authenticated users)
 export const getDentists = async (req, res) => {

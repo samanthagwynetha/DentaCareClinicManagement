@@ -23,49 +23,46 @@ const userSchema = new mongoose.Schema(
             type: String,
         },
 
-        emailNotifications: {
-            type: Boolean,
-            default: true,
+        notificationPrefs: {
+            emailNotifications: {
+                type: Boolean,
+                default: true,
+            },
+            smsReminders: {
+                type: Boolean,
+                default: true,
+            },
+            appointmentAlerts: {
+                type: Boolean,
+                default: true,
+            },
+            billingAlerts: {
+                type: Boolean,
+                default: false,
+            },
+            systemUpdates: {
+                type: Boolean,
+                default: false,
+            },
         },
 
-        smsReminders: {
-            type: Boolean,
-            default: true,
-        },
-
-        appointmentAlerts: {
-            type: Boolean,
-            default: true,
-        },
-
-        billingAlerts: {
-            type: Boolean,
-            default: false,
-        },
-
-        systemUpdates: {
-            type: Boolean,
-            default: false,
-        },
-
-        language: {
-            type: String,
-            default: 'English',
-        },
-
-        dateFormat: {
-            type: String,
-            default: 'MM/DD/YYYY',
-        },
-
-        currency: {
-            type: String,
-            default: 'PHP',
-        },
-
-        theme: {
-            type: String,
-            default: 'Light',
+        systemPrefs: {
+            language: {
+                type: String,
+                default: 'English',
+            },
+            dateFormat: {
+                type: String,
+                default: 'MM/DD/YYYY',
+            },
+            currency: {
+                type: String,
+                default: 'PHP',
+            },
+            theme: {
+                type: String,
+                default: 'Light',
+            },
         },
 
         role: {
