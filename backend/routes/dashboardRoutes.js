@@ -3,12 +3,26 @@ import Patient from '../src/models/Patient.js';
 import Appointment from "../src/models/Appointment.js";
 import Invoice from "../src/models/Invoice.js";
 import { protect } from "../middlewares/authMiddleware.js";
-
+import { authorize } from "../middlewares/roleMiddleware.js";
 const router = express.Router();
 
 router.get("/stats", protect, async (req, res) => {
     try {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
         const totalPatients = await Patient.countDocuments();
+        const patientsThisMonth = await Patient.countDocuments({
+            createdAt: { $gte: startOfMonth, $lt: startOfNextMonth }
+        });
+        const patientsLastMonth = await Patient.countDocuments({
+            createdAt: { $gte: startOfLastMonth, $lt: startOfMonth }
+        });
+        const patientsTrendPercent = patientsLastMonth === 0 
+            ? (patientsThisMonth > 0 ? 100 : 0) 
+            : ((patientsThisMonth - patientsLastMonth) / patientsLastMonth) * 100;
 
         const start = new Date();
         start.setHours(0, 0, 0, 0);
@@ -18,20 +32,34 @@ router.get("/stats", protect, async (req, res) => {
         const todayAppointments = await Appointment.countDocuments({
             date: { $gte: start, $lte: end },
         });
+        const appointmentsRemaining = await Appointment.countDocuments({
+            date: { $gte: start, $lte: end },
+            status: { $nin: ["Completed", "Cancelled"] }
+        });
 
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        let monthlyRevenue = 0;
+        let revenueTrendPercent = 0;
+        if (req.user && req.user.role === 'admin') {
+            const invoices = await Invoice.find({
+                status: "paid",
+                issuedDate: { $gte: startOfMonth, $lt: startOfNextMonth },
+            }).select("totalAmount");
 
-        const invoices = await Invoice.find({
-            status: "paid",
-            issuedDate: { $gte: startOfMonth, $lt: startOfNextMonth },
-        }).select("totalAmount");
+            monthlyRevenue = invoices.reduce(
+                (sum, inv) => sum + (inv.totalAmount || 0),
+                0
+            );
 
-        const monthlyRevenue = invoices.reduce(
-            (sum, inv) => sum + (inv.totalAmount || 0),
-            0
-        );
+            const lastMonthInvoices = await Invoice.find({
+                status: "paid",
+                issuedDate: { $gte: startOfLastMonth, $lt: startOfMonth },
+            }).select("totalAmount");
+            const lastMonthRevenue = lastMonthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+            
+            revenueTrendPercent = lastMonthRevenue === 0
+                ? (monthlyRevenue > 0 ? 100 : 0)
+                : ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+        }
 
         const treatmentsDone = await Appointment.countDocuments({
             status: "Completed",
@@ -72,13 +100,16 @@ router.get("/stats", protect, async (req, res) => {
             monthlyRevenue,
             treatmentsDone,
             treatmentsTrendPercent,
+            patientsTrendPercent,
+            appointmentsRemaining,
+            revenueTrendPercent,
         });
     } catch (err) {
         res.status(500).json({ message: "Dashboard stats error " });
     }
 });
 
-router.get("/revenue-monthly", protect, async (req, res) => {
+router.get("/revenue-monthly", protect, authorize("admin"), async (req, res) => {
     try {
         const now = new Date();
         const startOfYear = new Date(now.getFullYear(), 0, 1);

@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "../src/models/User.js";
 
 export const getProfile = async (req, res) => {
   try {
@@ -86,20 +86,19 @@ export const changePassword = async (req, res) => {
 
 export const getNotificationPreferences = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select(
-      "emailNotifications smsReminders appointmentAlerts billingAlerts systemUpdates"
-    );
+    const user = await User.findById(req.user._id).select("notificationPrefs");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const prefs = user.notificationPrefs || {};
     res.json({
-      emailNotifications: user.emailNotifications ?? true,
-      smsReminders: user.smsReminders ?? true,
-      appointmentAlerts: user.appointmentAlerts ?? true,
-      billingAlerts: user.billingAlerts ?? false,
-      systemUpdates: user.systemUpdates ?? false,
+      emailNotifications: prefs.emailNotifications ?? true,
+      smsReminders: prefs.smsReminders ?? true,
+      appointmentAlerts: prefs.appointmentAlerts ?? true,
+      billingAlerts: prefs.billingAlerts ?? false,
+      systemUpdates: prefs.systemUpdates ?? false,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -121,20 +120,22 @@ export const updateNotificationPreferences = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (emailNotifications !== undefined) user.emailNotifications = !!emailNotifications;
-    if (smsReminders !== undefined) user.smsReminders = !!smsReminders;
-    if (appointmentAlerts !== undefined) user.appointmentAlerts = !!appointmentAlerts;
-    if (billingAlerts !== undefined) user.billingAlerts = !!billingAlerts;
-    if (systemUpdates !== undefined) user.systemUpdates = !!systemUpdates;
+    if (!user.notificationPrefs) user.notificationPrefs = {};
+    if (emailNotifications !== undefined) user.notificationPrefs.emailNotifications = !!emailNotifications;
+    if (smsReminders !== undefined) user.notificationPrefs.smsReminders = !!smsReminders;
+    if (appointmentAlerts !== undefined) user.notificationPrefs.appointmentAlerts = !!appointmentAlerts;
+    if (billingAlerts !== undefined) user.notificationPrefs.billingAlerts = !!billingAlerts;
+    if (systemUpdates !== undefined) user.notificationPrefs.systemUpdates = !!systemUpdates;
+    user.markModified('notificationPrefs');
 
     await user.save();
 
     res.json({
-      emailNotifications: user.emailNotifications,
-      smsReminders: user.smsReminders,
-      appointmentAlerts: user.appointmentAlerts,
-      billingAlerts: user.billingAlerts,
-      systemUpdates: user.systemUpdates,
+      emailNotifications: user.notificationPrefs.emailNotifications,
+      smsReminders: user.notificationPrefs.smsReminders,
+      appointmentAlerts: user.notificationPrefs.appointmentAlerts,
+      billingAlerts: user.notificationPrefs.billingAlerts,
+      systemUpdates: user.notificationPrefs.systemUpdates,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -143,19 +144,18 @@ export const updateNotificationPreferences = async (req, res) => {
 
 export const getSystemPreferences = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select(
-      "language dateFormat currency theme"
-    );
+    const user = await User.findById(req.user._id).select("systemPrefs");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const prefs = user.systemPrefs || {};
     res.json({
-      language: user.language ?? "English",
-      dateFormat: user.dateFormat ?? "MM/DD/YYYY",
-      currency: user.currency ?? "PHP",
-      theme: user.theme ?? "Light",
+      language: prefs.language ?? "English",
+      dateFormat: prefs.dateFormat ?? "MM/DD/YYYY",
+      currency: prefs.currency ?? "PHP",
+      theme: prefs.theme ?? "Light",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -171,18 +171,20 @@ export const updateSystemPreferences = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (language !== undefined) user.language = language;
-    if (dateFormat !== undefined) user.dateFormat = dateFormat;
-    if (currency !== undefined) user.currency = currency;
-    if (theme !== undefined) user.theme = theme;
+    if (!user.systemPrefs) user.systemPrefs = {};
+    if (language !== undefined) user.systemPrefs.language = language;
+    if (dateFormat !== undefined) user.systemPrefs.dateFormat = dateFormat;
+    if (currency !== undefined) user.systemPrefs.currency = currency;
+    if (theme !== undefined) user.systemPrefs.theme = theme;
+    user.markModified('systemPrefs');
 
     await user.save();
 
     res.json({
-      language: user.language,
-      dateFormat: user.dateFormat,
-      currency: user.currency,
-      theme: user.theme,
+      language: user.systemPrefs.language,
+      dateFormat: user.systemPrefs.dateFormat,
+      currency: user.systemPrefs.currency,
+      theme: user.systemPrefs.theme,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
