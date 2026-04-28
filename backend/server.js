@@ -16,33 +16,69 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
+import mongoose from "mongoose";
+import logger from "./utils/logger.js";
 
 dotenv.config();
 
 const app = express();
 
+// Track server start time for uptime calculation
+const startTime = Date.now();
+
 connectDB();
 
+
+// CORS Configuration (Must be first to handle preflight requests properly)
+app.use(cors({
+  origin: [
+    "http://localhost:3000", 
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+}));
 
 // Security Middlewares
 app.use(helmet()); // Sets various HTTP headers for security
 
-// Rate Limiting (Prevent Brute Force)
-const limiter = rateLimit({
+// Rate Limiting
+// General API limit
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 2000, // Increased limit for normal usage
   message: "Too many requests from this IP, please try again after 15 minutes"
 });
-app.use("/api/", limiter); // Apply rate limiter to all API routes
+app.use("/api/", apiLimiter);
 
-// CORS Configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
-  credentials: true,
-}));
+// Strict limit for authentication routes to prevent brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Strict limit for logins
+  message: "Too many login attempts, please try again after 15 minutes"
+});
+app.use("/api/auth/", authLimiter);
 
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+
+// Logging Middleware - logs all API requests
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  // Log when response is finished
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.path}`, {
+      module: "http",
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      responseTime: `${duration}ms`
+    });
+  });
+  
+  next();
+});
 
 // Patient Routes
 app.use("/api/patients", patientRoutes);
@@ -83,6 +119,23 @@ app.get("/", (req, res) => {
   res.send("Dental Clinic Backend is running 🦷");
 });
 
+// Health Check Endpoint (for monitoring & load balancers)
+// NOT rate-limited because monitoring services check this frequently
+app.get("/health", (req, res) => {
+  const uptime = Math.floor((Date.now() - startTime) / 1000); // in seconds
+  const isDatabaseConnected = mongoose.connection.readyState === 1; // 1 = connected
+  const statusCode = isDatabaseConnected ? 200 : 503; // 503 = Service Unavailable
+  
+  res.status(statusCode).json({
+    status: isDatabaseConnected ? "ok" : "degraded",
+    timestamp: new Date().toISOString(),
+    uptime: uptime, // seconds since server started
+    database: isDatabaseConnected ? "connected" : "disconnected",
+    environment: process.env.NODE_ENV || "development",
+    version: "1.0.0"
+  });
+});
+
 // Error Handling Middlewares (Must be at the end)
 app.use(notFound);
 app.use(errorHandler);
@@ -90,5 +143,9 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server started on port ${PORT}`, {
+    module: "server",
+    port: PORT,
+    environment: process.env.NODE_ENV || "development"
+  });
 });

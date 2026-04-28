@@ -13,57 +13,10 @@ router.get("/stats", protect, async (req, res) => {
         const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        const totalPatients = await Patient.countDocuments();
-        const patientsThisMonth = await Patient.countDocuments({
-            createdAt: { $gte: startOfMonth, $lt: startOfNextMonth }
-        });
-        const patientsLastMonth = await Patient.countDocuments({
-            createdAt: { $gte: startOfLastMonth, $lt: startOfMonth }
-        });
-        const patientsTrendPercent = patientsLastMonth === 0 
-            ? (patientsThisMonth > 0 ? 100 : 0) 
-            : ((patientsThisMonth - patientsLastMonth) / patientsLastMonth) * 100;
-
-        const start = new Date();
-        start.setHours(0, 0, 0, 0);
-        const end = new Date();
-        end.setHours(23, 59, 59, 999);
-        
-        const todayAppointments = await Appointment.countDocuments({
-            date: { $gte: start, $lte: end },
-        });
-        const appointmentsRemaining = await Appointment.countDocuments({
-            date: { $gte: start, $lte: end },
-            status: { $nin: ["Completed", "Cancelled"] }
-        });
-
-        let monthlyRevenue = 0;
-        let revenueTrendPercent = 0;
-        if (req.user && req.user.role === 'admin') {
-            const invoices = await Invoice.find({
-                status: "paid",
-                issuedDate: { $gte: startOfMonth, $lt: startOfNextMonth },
-            }).select("totalAmount");
-
-            monthlyRevenue = invoices.reduce(
-                (sum, inv) => sum + (inv.totalAmount || 0),
-                0
-            );
-
-            const lastMonthInvoices = await Invoice.find({
-                status: "paid",
-                issuedDate: { $gte: startOfLastMonth, $lt: startOfMonth },
-            }).select("totalAmount");
-            const lastMonthRevenue = lastMonthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-            
-            revenueTrendPercent = lastMonthRevenue === 0
-                ? (monthlyRevenue > 0 ? 100 : 0)
-                : ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-        }
-
-        const treatmentsDone = await Appointment.countDocuments({
-            status: "Completed",
-        });
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
 
         const startOfWeek = new Date(now);
         const dayOfWeek = startOfWeek.getDay();
@@ -77,22 +30,56 @@ router.get("/stats", protect, async (req, res) => {
         const startOfLastWeek = new Date(startOfWeek);
         startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
 
-        const completedThisWeek = await Appointment.countDocuments({
-            status: "Completed",
-            date: { $gte: startOfWeek, $lt: startOfNextWeek },
-        });
+        // Run independent database queries in parallel for speed
+        const [
+            totalPatients,
+            patientsThisMonth,
+            patientsLastMonth,
+            todayAppointments,
+            appointmentsRemaining,
+            treatmentsDone,
+            completedThisWeek,
+            completedLastWeek
+        ] = await Promise.all([
+            Patient.countDocuments(),
+            Patient.countDocuments({ createdAt: { $gte: startOfMonth, $lt: startOfNextMonth } }),
+            Patient.countDocuments({ createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
+            Appointment.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } }),
+            Appointment.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay }, status: { $nin: ["Completed", "Cancelled"] } }),
+            Appointment.countDocuments({ status: "Completed" }),
+            Appointment.countDocuments({ status: "Completed", date: { $gte: startOfWeek, $lt: startOfNextWeek } }),
+            Appointment.countDocuments({ status: "Completed", date: { $gte: startOfLastWeek, $lt: startOfWeek } })
+        ]);
 
-        const completedLastWeek = await Appointment.countDocuments({
-            status: "Completed",
-            date: { $gte: startOfLastWeek, $lt: startOfWeek },
-        });
+        const patientsTrendPercent = patientsLastMonth === 0 
+            ? (patientsThisMonth > 0 ? 100 : 0) 
+            : ((patientsThisMonth - patientsLastMonth) / patientsLastMonth) * 100;
 
-        let treatmentsTrendPercent = 0;
-        if (completedLastWeek === 0) {
-            treatmentsTrendPercent = completedThisWeek > 0 ? 100 : 0;
-        } else {
-            treatmentsTrendPercent = ((completedThisWeek - completedLastWeek) / completedLastWeek) * 100;
+        let monthlyRevenue = 0;
+        let revenueTrendPercent = 0;
+        if (req.user && req.user.role === 'admin') {
+            const [invoices, lastMonthInvoices] = await Promise.all([
+                Invoice.find({
+                    status: "paid",
+                    issuedDate: { $gte: startOfMonth, $lt: startOfNextMonth },
+                }).select("totalAmount"),
+                Invoice.find({
+                    status: "paid",
+                    issuedDate: { $gte: startOfLastMonth, $lt: startOfMonth },
+                }).select("totalAmount")
+            ]);
+
+            monthlyRevenue = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+            const lastMonthRevenue = lastMonthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+            
+            revenueTrendPercent = lastMonthRevenue === 0
+                ? (monthlyRevenue > 0 ? 100 : 0)
+                : ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
         }
+
+        let treatmentsTrendPercent = completedLastWeek === 0
+            ? (completedThisWeek > 0 ? 100 : 0)
+            : ((completedThisWeek - completedLastWeek) / completedLastWeek) * 100;
 
         res.json({
             totalPatients,
@@ -105,7 +92,8 @@ router.get("/stats", protect, async (req, res) => {
             revenueTrendPercent,
         });
     } catch (err) {
-        res.status(500).json({ message: "Dashboard stats error " });
+        console.error("Dashboard stats error:", err);
+        res.status(500).json({ message: "Dashboard stats error" });
     }
 });
 
@@ -199,22 +187,24 @@ router.get("/recent-patients", protect, async (req, res) => {
 
         const now = new Date();
 
+        // Run all patient lookups in parallel
         const data = await Promise.all(
             patients.map(async (patient) => {
-                const lastVisit = await Appointment.findOne({
-                    patient: patient._id,
-                    date: { $lte: now },
-                })
-                    .sort({ date: -1 })
-                    .select("date");
-
-                const nextAppointment = await Appointment.findOne({
-                    patient: patient._id,
-                    date: { $gt: now },
-                    status: { $ne: "Cancelled" },
-                })
-                    .sort({ date: 1 })
-                    .select("date");
+                const [lastVisit, nextAppointment] = await Promise.all([
+                    Appointment.findOne({
+                        patient: patient._id,
+                        date: { $lte: now },
+                    })
+                        .sort({ date: -1 })
+                        .select("date"),
+                    Appointment.findOne({
+                        patient: patient._id,
+                        date: { $gt: now },
+                        status: { $ne: "Cancelled" },
+                    })
+                        .sort({ date: 1 })
+                        .select("date")
+                ]);
 
                 return {
                     id: patient._id,
@@ -230,6 +220,7 @@ router.get("/recent-patients", protect, async (req, res) => {
 
         res.json({ patients: data });
     } catch (err) {
+        console.error("Recent patients error:", err);
         res.status(500).json({ message: "Recent patients error" });
     }
 });
