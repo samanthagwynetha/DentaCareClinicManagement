@@ -154,7 +154,7 @@ export default function InvoiceModal({ onClose, onSaved, invoice, mode }: Props)
                     placeholder="Price"
                     min={0}
                     className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    value={svc.price}
+                    value={svc.price || ""}
                     onChange={(e) => updateService(idx, "price", parseFloat(e.target.value) || 0)}
                     disabled={isView}
                     required
