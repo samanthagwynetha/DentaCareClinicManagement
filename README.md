@@ -8,11 +8,7 @@
 
 ## 📸 Preview
 
-<img width="1920" height="1000" alt="image" src="https://github.com/user-attachments/assets/ae419765-a184-4da9-bfd1-d9b00e6aa524" />
-
-<img width="1920" height="1000" alt="image" src="https://github.com/user-attachments/assets/f7c157af-202c-47c3-817d-fde119147d78" />
-<img width="1920" height="1000" alt="image" src="https://github.com/user-attachments/assets/ae419765-a184-4da9-bfd1-d9b00e6aa524" />
-
+![image](<img width="1920" height="1000" alt="image" src="https://github.com/user-attachments/assets/d33370d1-5d05-4018-aee7-996e8797ba46" />)
 
 ---
 
