@@ -46,4 +46,7 @@ const invoiceSchema = new mongoose.Schema(
     { timestamps: true } 
 );
 
+invoiceSchema.index({ status: 1 });
+invoiceSchema.index({ issuedDate: 1 });
+
 export default mongoose.model("Invoice", invoiceSchema);
