@@ -73,7 +73,7 @@ export const sendReminder = async (req, res) => {
   try {
     const transporter = createTransporter();
     await transporter.sendMail({
-      from: `"DentaCare" <${process.env.RESEND_FROM || "onboarding@resend.dev"}>`,
+      from: `"DentaCare" <${process.env.SMTP_USER || process.env.RESEND_FROM || "onboarding@resend.dev"}>`,
       to: patientEmail,
       subject: `Appointment Reminder — ${formattedDate} at ${time}`,
       html: htmlBody,
