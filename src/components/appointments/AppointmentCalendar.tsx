@@ -47,9 +47,6 @@ function getAppointmentsForCell(
   slotTime: string
 ): Appointment[] {
   const dateStr = toDateStr(date);
-  const todayStr = toDateStr(new Date());
-  // Skip past dates entirely
-  if (dateStr < todayStr) return [];
   return appointments.filter((a) => {
     // Normalise stored date to YYYY-MM-DD
     const apptDate = a.date.split("T")[0];
