@@ -50,17 +50,18 @@ export default function AppointmentList({ appointments, loading, role, onDeleted
         body: JSON.stringify({
           patientName: `${appt.patient.firstName} ${appt.patient.lastName}`,
           patientEmail: appt.patient.email,
-          dentist: appt.dentist,
+          dentist: typeof appt.dentist === "object" ? appt.dentist.name : appt.dentist,
           date: appt.date,
           time: appt.time,
         }),
       });
       setReminderMsg({ id: appt._id, ok: true, text: "Reminder sent!" });
-    } catch {
-      setReminderMsg({ id: appt._id, ok: false, text: "Failed to send reminder." });
+    } catch (error: any) {
+      console.error("Reminder failed:", error);
+      setReminderMsg({ id: appt._id, ok: false, text: error.message || "Failed to send reminder." });
     } finally {
       setSendingReminderId(null);
-      setTimeout(() => setReminderMsg(null), 3500);
+      setTimeout(() => setReminderMsg(null), 5000); // 5 seconds to read the error
     }
   };
 
@@ -107,7 +108,9 @@ export default function AppointmentList({ appointments, loading, role, onDeleted
                     <td className="px-6 py-4 font-semibold text-gray-900">
                       {appt.patient.firstName} {appt.patient.lastName}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{appt.dentist}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {typeof appt.dentist === "object" ? appt.dentist.name : appt.dentist}
+                    </td>
                     <td className="px-6 py-4 text-gray-500">{formatDate(appt.date)}</td>
                     <td className="px-6 py-4 text-gray-500">{appt.time}</td>
                     <td className="px-6 py-4">

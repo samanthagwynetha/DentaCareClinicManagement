@@ -13,7 +13,7 @@ export type DentistUser = {
 export type Appointment = {
   _id: string;
   patient: Patient;
-  dentist: string;
+  dentist: { _id: string; name: string } | string;
   date: string;
   time: string;
   status: string;

@@ -15,7 +15,7 @@ export default function AppointmentModal({ onClose, onCreated, appointment }: Pr
   const [dentists, setDentists] = useState<DentistUser[]>([]);
   const [form, setForm] = useState({
     patient: "",
-    dentist: "",
+    dentistId: "",
     date: "",
     time: "",
     status: "Scheduled",
@@ -37,7 +37,7 @@ export default function AppointmentModal({ onClose, onCreated, appointment }: Pr
     if (appointment) {
       setForm({
         patient: appointment.patient._id,
-        dentist: appointment.dentist,
+        dentistId: typeof appointment.dentist === "object" ? appointment.dentist._id : appointment.dentist,
         date: appointment.date.split("T")[0],
         time: appointment.time,
         status: appointment.status,
@@ -51,21 +51,22 @@ export default function AppointmentModal({ onClose, onCreated, appointment }: Pr
     setSubmitting(true);
     setError("");
     try {
+      const payload = { ...form, dentist: form.dentistId };
       if (isEdit) {
         await apiFetch(`/api/appointments/${appointment!._id}`, {
           method: "PUT",
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
       } else {
         await apiFetch("/api/appointments", {
           method: "POST",
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
       }
       onCreated();
       onClose();
-    } catch {
-      setError(`Failed to ${isEdit ? "update" : "create"} appointment. Please try again.`);
+    } catch (err: any) {
+      setError(err.message || `Failed to ${isEdit ? "update" : "create"} appointment. Please try again.`);
     } finally {
       setSubmitting(false);
     }
@@ -120,13 +121,13 @@ export default function AppointmentModal({ onClose, onCreated, appointment }: Pr
             <label className="block text-sm font-medium text-gray-700 mb-1">Dentist</label>
             <select
               required
-              value={form.dentist}
-              onChange={(e) => setForm({ ...form, dentist: e.target.value })}
+              value={form.dentistId}
+              onChange={(e) => setForm({ ...form, dentistId: e.target.value })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="">Select dentist</option>
               {dentists.map((d) => (
-                <option key={d._id} value={d.name}>{d.name}</option>
+                <option key={d._id} value={d._id}>{d.name}</option>
               ))}
             </select>
           </div>

@@ -24,6 +24,7 @@ export default function AppointmentsPage() {
 
   const loadAppointments = useCallback(async () => {
     if (isChecking) return;
+    setLoading(true);
     try {
       const data = await apiFetch<Appointment[]>("/api/appointments");
       setAppointments(data);
@@ -32,7 +33,7 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isChecking]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -157,9 +158,12 @@ export default function AppointmentsPage() {
           {(() => {
             const q = search.toLowerCase();
             const filtered = appointments.filter((a) => {
-              const name = `${a.patient.firstName} ${a.patient.lastName}`.toLowerCase();
-              const matchesSearch = !q || name.includes(q) || a.dentist.toLowerCase().includes(q);
-              const matchesDentist = !selectedDentist || a.dentist === selectedDentist;
+              const patientName = `${a.patient.firstName} ${a.patient.lastName}`.toLowerCase();
+              const dentistName = (typeof a.dentist === "object" ? a.dentist.name : a.dentist || "").toLowerCase();
+              const dentistId = typeof a.dentist === "object" ? a.dentist._id : a.dentist;
+              
+              const matchesSearch = !q || patientName.includes(q) || dentistName.includes(q);
+              const matchesDentist = !selectedDentist || dentistName === selectedDentist.toLowerCase() || dentistId === selectedDentist;
               return matchesSearch && matchesDentist;
             });
             return (
