@@ -87,9 +87,9 @@ export default function Sidebar() {
         </div> */}
         
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+            <svg className="w-7 h-7 text-white" viewBox="0 0 64 64" fill="currentColor">
+              <path d="M22 6C16 6 10 11 10 18C10 22 11.5 25.5 12.5 28.5C14 33 14 36 13 41C12 46 12 52 16 54C20 56 22 50 24 45C25.5 41 27 38 32 38C37 38 38.5 41 40 45C42 50 44 56 48 54C52 52 52 46 51 41C50 36 50 33 51.5 28.5C52.5 25.5 54 22 54 18C54 11 48 6 42 6C39 6 36.5 7.5 34.5 9C33.5 9.7 32.8 10 32 10C31.2 10 30.5 9.7 29.5 9C27.5 7.5 25 6 22 6Z"/>
             </svg>
           </div>
           <div>
