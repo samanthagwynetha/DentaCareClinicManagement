@@ -15,7 +15,8 @@ export const getAppointments = async (req, res) => {
     try {
         const appointments = await Appointment.find()
             .populate("patient")
-            .populate("dentist", "name");
+            .populate("dentist", "name")
+            .sort({ date: -1, time: -1 }); // Sort by newest date and time first
         res.json(appointments);
     } catch (error) {
         res.status(500).json({ message: error.message});

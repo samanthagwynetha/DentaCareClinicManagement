@@ -110,6 +110,8 @@ export default function InvoiceTable({
   onRefresh,
 }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const totalRevenuePaid = allInvoices
     .filter((i) => i.status === "paid")
@@ -125,6 +127,17 @@ export default function InvoiceTable({
       setDeletingId(null);
     }
   }
+
+  const totalPages = Math.max(1, Math.ceil(invoices.length / rowsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, invoices.length);
+  const visibleInvoices = invoices.slice(startIndex, endIndex);
+
+  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200">
@@ -145,9 +158,9 @@ export default function InvoiceTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {invoices.map((inv, idx) => (
+            {visibleInvoices.map((inv, idx) => (
               <tr key={inv._id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-gray-500">{idx + 1}</td>
+                <td className="px-6 py-4 text-gray-500">{startIndex + idx + 1}</td>
                 <td className="px-6 py-4 font-medium text-gray-900">
                   {inv.patient
                     ? `${inv.patient.firstName} ${inv.patient.lastName}`
@@ -222,15 +235,50 @@ export default function InvoiceTable({
         </table>
       )}
 
-      {/* Footer */}
-      <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
-        <span>
-          Showing {invoices.length} of {allInvoices.length} invoices
-        </span>
-        <span className="font-medium text-gray-700">
-          Total Revenue (Paid): ₱{totalRevenuePaid.toLocaleString()}
-        </span>
-      </div>
+      {/* Pagination Footer */}
+      {!loading && invoices.length > 0 && (
+        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
+          {/* Left: Pagination Controls */}
+          <div className="flex items-center gap-3">
+            <span>Rows per page:</span>
+            <select
+              value={rowsPerPage}
+              onChange={handleRowsPerPageChange}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
+            >
+              <option value={8}>8</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
+            <span>
+              Showing {startIndex + 1}–{endIndex} of {invoices.length}
+            </span>
+          </div>
+
+          {/* Center/Right: Revenue and Next/Prev */}
+          <div className="flex items-center gap-6">
+            {/* <span className="font-medium text-gray-700">
+              Total Revenue (Paid): ₱{totalRevenuePaid.toLocaleString()}
+            </span> */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="px-3 py-1 rounded-md text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="px-3 py-1 rounded-md text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={!!deletingId}
