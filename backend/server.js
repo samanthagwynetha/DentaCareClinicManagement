@@ -39,7 +39,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin) || allowedOrigins.some(o => origin.startsWith(o))) {
       callback(null, true);
     } else {
@@ -78,7 +78,7 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // Logging Middleware - logs all API requests
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   // Log when response is finished
   res.on("finish", () => {
     const duration = Date.now() - start;
@@ -90,7 +90,7 @@ app.use((req, res, next) => {
       responseTime: `${duration}ms`
     });
   });
-  
+
   next();
 });
 
@@ -139,7 +139,7 @@ app.get("/health", (req, res) => {
   const uptime = Math.floor((Date.now() - startTime) / 1000); // in seconds
   const isDatabaseConnected = mongoose.connection.readyState === 1; // 1 = connected
   const statusCode = isDatabaseConnected ? 200 : 503; // 503 = Service Unavailable
-  
+
   res.status(statusCode).json({
     status: isDatabaseConnected ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
