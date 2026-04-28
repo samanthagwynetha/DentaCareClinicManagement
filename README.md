@@ -8,7 +8,8 @@
 
 ## 📸 Preview
 
-![Uploading image.png…]()
+<img width="1920" height="1000" alt="image" src="https://github.com/user-attachments/assets/f7c157af-202c-47c3-817d-fde119147d78" />
+
 
 
 ---
