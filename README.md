@@ -8,7 +8,8 @@
 
 ## 📸 Preview
 
-![DentaCare Login](public/dental-clinic-bg.png)
+![Uploading image.png…]()
+
 
 ---
 
