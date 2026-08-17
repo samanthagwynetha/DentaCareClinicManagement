@@ -8,11 +8,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -26,6 +29,7 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setError(data.message || "Login failed");
+        setIsLoading(false);
         return;
       }
 
@@ -34,7 +38,8 @@ export default function LoginPage() {
 
       router.push("/dashboard");
     } catch (err) {
-      setError("Something went wrong");
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -55,7 +60,7 @@ export default function LoginPage() {
           <div>
             <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <svg className="w-7 h-7 text-white" viewBox="0 0 64 64" fill="currentColor">
-                <path d="M22 6C16 6 10 11 10 18C10 22 11.5 25.5 12.5 28.5C14 33 14 36 13 41C12 46 12 52 16 54C20 56 22 50 24 45C25.5 41 27 38 32 38C37 38 38.5 41 40 45C42 50 44 56 48 54C52 52 52 46 51 41C50 36 50 33 51.5 28.5C52.5 25.5 54 22 54 18C54 11 48 6 42 6C39 6 36.5 7.5 34.5 9C33.5 9.7 32.8 10 32 10C31.2 10 30.5 9.7 29.5 9C27.5 7.5 25 6 22 6Z"/>
+                <path d="M22 6C16 6 10 11 10 18C10 22 11.5 25.5 12.5 28.5C14 33 14 36 13 41C12 46 12 52 16 54C20 56 22 50 24 45C25.5 41 27 38 32 38C37 38 38.5 41 40 45C42 50 44 56 48 54C52 52 52 46 51 41C50 36 50 33 51.5 28.5C52.5 25.5 54 22 54 18C54 11 48 6 42 6C39 6 36.5 7.5 34.5 9C33.5 9.7 32.8 10 32 10C31.2 10 30.5 9.7 29.5 9C27.5 7.5 25 6 22 6Z" />
               </svg>
             </div>
           </div>
@@ -152,9 +157,20 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-[#1ebbb0] hover:bg-[#1aa39a] text-white font-medium py-2.5 rounded-lg transition-colors text-sm shadow-sm"
+                disabled={isLoading}
+                className="w-full bg-[#1ebbb0] hover:bg-[#1aa39a] disabled:opacity-75 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all text-sm shadow-sm flex items-center justify-center gap-2"
               >
-                Sign In
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </button>
             </form>
           </div>
